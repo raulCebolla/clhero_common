@@ -1,0 +1,4 @@
+<launch>
+	<node name="complete_wave" pkg="clhero_gait_patterns_definition" type="complete_wave"/>
+	<node name="test_pattern" pkg="clhero_gait_patterns_definition" type="test_pattern"/>
+</launch>

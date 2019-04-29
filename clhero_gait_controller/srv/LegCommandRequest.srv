@@ -1,0 +1,10 @@
+float32[6] pos
+float32[6] vel
+float32[6] acel
+float32[6] decel
+std_msgs/Bool[6] new_acel_profile
+std_msgs/Bool[6] position_command
+int16[6] new_command
+string gait_pattern_name
+---
+int8 ans

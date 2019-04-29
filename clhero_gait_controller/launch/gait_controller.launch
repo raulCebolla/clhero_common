@@ -1,0 +1,6 @@
+<launch>
+	<node name="command_interface" pkg="clhero_gait_controller" type="clhero_command_interface" ns="clhero"/>
+	<node name="gait_pattern_interface" pkg="clhero_gait_controller" type="clhero_gait_pattern_interface" ns="clhero"/>
+
+	<include file="$(find clhero_gait_patterns_definition)/launch/patterns.launch" ns="clhero"/>
+</launch>
