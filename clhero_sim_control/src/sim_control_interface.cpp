@@ -236,7 +236,7 @@ int main(int argc, char **argv){
 
   ros::Rate loop_rate (LOOP_RATE);
 
-  const std::string controller_namespace = "/clhero";
+  const std::string controller_namespace = "/hexapodo";
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 1000);
@@ -246,7 +246,7 @@ int main(int argc, char **argv){
 
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 1000, legCommandCallback);
-  ros::Subscriber joint_states_sub = nh.subscribe("/clhero/joint_states", 1000, jointStatesCallback);
+  ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
 
   //threads with the control of each leg
   std::thread control_leg_1_thr (control_leg, 1);

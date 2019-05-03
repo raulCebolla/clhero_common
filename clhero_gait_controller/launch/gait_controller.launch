@@ -1,6 +1,26 @@
 <launch>
-	<node name="command_interface" pkg="clhero_gait_controller" type="clhero_command_interface" ns="clhero"/>
-	<node name="gait_pattern_interface" pkg="clhero_gait_controller" type="clhero_gait_pattern_interface" ns="clhero"/>
 
-	<include file="$(find clhero_gait_patterns_definition)/launch/patterns.launch" ns="clhero"/>
+	<!--Arguments to pass the launch file-->
+	<arg name="patterns" default="true"/>
+	<arg name="gazebo_sim" default="true"/>
+
+
+	<group ns="clhero_gait_control">
+		
+		<group>
+			<node name="command_interface" pkg="clhero_gait_controller" type="clhero_command_interface"/>
+			<node name="gait_pattern_interface" pkg="clhero_gait_controller" type="clhero_gait_pattern_interface"/>
+		</group>
+
+		<group>
+			<!--The simulation interface shall only be launched when the gazebo simulation is planned to run-->
+			<node name="sim_control_interface" pkg="clhero_sim_control" type="clhero_sim_control_interface" if="$(arg gazebo_sim)"/>
+		</group>
+
+		<group>
+			<!--By default, the launch file includes the patterns' nodes-->
+			<include file="$(find clhero_gait_patterns_definition)/launch/patterns.launch" if="$(arg patterns)"/>
+		</group>
+	</group>
+
 </launch>
