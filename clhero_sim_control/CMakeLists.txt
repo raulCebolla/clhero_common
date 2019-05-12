@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   clhero_gait_controller
   roscpp
+  controller_manager
 )
 
 ## System dependencies are found with CMake's conventions

@@ -15,6 +15,7 @@
 #include <sensor_msgs/JointState.h>
 #include <clhero_gait_controller/LegCommand.h>
 #include <clhero_gait_controller/LegState.h>
+#include <controller_manager_msgs/SwitchController.h>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -32,6 +33,12 @@
 #define PI 3.14159265359
 #define ANG_THR 0.03490658503988659 //2*(2*PI)/360
 #define ANG_V 0.17453292519943295 //10*(2*PI)/360
+#define VEL_THR 0.5235987755982988 // = 5 [rpm]
+#define ANG_P_THR 0.08726646259971647 // 5[º]
+#define ANG_V_THR 0.3490658503988659 // 20 [º]
+#define POS_ANG_THR 0.3490658503988659 // 20 [º]
+#define POSITION_CONTROL 107
+#define VELOCITY_CONTROL 108
 
 //----------------------------------------------------
 //    Class definitions
@@ -80,6 +87,7 @@ class Command {
 
 struct Leg_state {
   float position [LEG_NUMBER];
+  float raw_position [LEG_NUMBER];
   float velocity [LEG_NUMBER];
   float effort [LEG_NUMBER];
 };
@@ -91,8 +99,12 @@ struct Leg_state {
 //Publisher of the legs_state_msg
 ros::Publisher legs_state_pub;
 
+//Client to switch the controller type
+ros::ServiceClient switch_controller_cli;
+
 //Publisher of each of the command msgs
-std::vector<ros::Publisher> controller_command_pub;
+std::vector<ros::Publisher> position_controller_command_pub;
+std::vector<ros::Publisher> velocity_controller_command_pub;
 
 //Legs'command
 Command command;
@@ -106,9 +118,56 @@ Leg_state leg_state;
 //Legs state mutex
 std::mutex leg_state_mtx;
 
+//Controller's namespace
+const std::string controller_namespace = "/hexapodo";
+
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
+
+//Function that performs the controllers'switch
+bool changeControllerType (int leg, int controller_type){
+  
+  controller_manager_msgs::SwitchController msg;
+  std::string controller_type_name;
+
+  if(controller_type == POSITION_CONTROL){
+
+    controller_type_name = "position controller";
+    //msg.request.start_controllers.push_back(controller_namespace + "/motor" + std::to_string(leg) + "_position_controller");
+    msg.request.start_controllers.push_back("motor" + std::to_string(leg) + "_position_controller");
+    //msg.request.stop_controllers.push_back(controller_namespace + "/motor" + std::to_string(leg) + "_velocity_controller");
+    msg.request.stop_controllers.push_back("motor" + std::to_string(leg) + "_velocity_controller");
+  
+  }else if(controller_type == VELOCITY_CONTROL){
+
+    controller_type_name = "velocity controller";
+    //msg.request.start_controllers.push_back(controller_namespace + "/motor" + std::to_string(leg) + "_velocity_controller");
+    msg.request.start_controllers.push_back("motor" + std::to_string(leg) + "_velocity_controller");
+    //msg.request.stop_controllers.push_back(controller_namespace + "/motor" + std::to_string(leg) + "_position_controller");
+    msg.request.stop_controllers.push_back("motor" + std::to_string(leg) + "_position_controller");
+  
+  }else{
+
+    return false;
+
+  }
+
+  msg.request.strictness = 1;
+
+  //sends the request for the change
+  if(!switch_controller_cli.call(msg)){
+    ROS_ERROR("[clhero_simulation_interface]: Could not call switch_controller service.");
+  }
+
+  if(!msg.response.ok){
+    std::string error_msg = "[clhero_simulation_interface]: Could not switch actuator " + std::to_string(leg) + " to " + controller_type_name;
+    ROS_ERROR(error_msg.c_str());
+  }
+
+  return true;
+
+}
 
 //Function that calcs the velocity for position control
 double posControlVel (double angle, double angle_ref, double vel_ref){
@@ -130,13 +189,14 @@ double posControlVel (double angle, double angle_ref, double vel_ref){
   }
 
   //calcs the velcity
-  if(dif_ang > ANG_V){
+  if(dif_ang > ANG_V_THR){
     //If the difference is great enough, the velocity is the referenced
     vel = vel_ref;
-  }else if(fabs(angle - angle_ref) < ANG_THR){
+  }else if(fabs(angle - angle_ref) < ANG_P_THR){
     vel = 0;
   }else{
-    vel = (dif_ang - angle_ref)/ANG_V*vel_ref;
+    //vel = (dif_ang - angle_ref)/ANG_V*vel_ref;
+    vel = vel_ref/(ANG_V_THR - ANG_P_THR)*(dif_ang - ANG_P_THR);
   }
 
   return vel;
@@ -154,10 +214,13 @@ void control_leg (int leg){
   ros::Rate loop_rate (CONTROL_RATE);
 
   //Message to be sent
-  std_msgs::Float64 msg;
+  std_msgs::Float64 command_msg;
 
   //Movement control variables
   double ang, ang_ref, vel_ref;
+
+  //Type of the current controller
+  int controller_type = VELOCITY_CONTROL;
 
   while(ros::ok()){
     //The behaviour of the control shall change whether it is a position command or not
@@ -173,19 +236,54 @@ void control_leg (int leg){
       vel_ref = command.vel[leg-1];
       command_mtx.unlock();
 
-      msg.data = posControlVel(ang, ang_ref, vel_ref);
+      //Checks if the position angle is in the threshold for the position cotroller 
+      if(fabs(ang - ang_ref) < ANG_P_THR){
+        
+        if(controller_type == VELOCITY_CONTROL){
+          //If the velocity controller is still active, request the switch into position controller
+          if(changeControllerType(leg, POSITION_CONTROL)){
+            controller_type = POSITION_CONTROL;
+          }
+        }
+
+        if(controller_type == POSITION_CONTROL){
+          //With the position controller now running, the command msg is built
+          command_msg.data = ang_ref;
+        }        
+
+      }else{
+
+        if(controller_type == POSITION_CONTROL){
+          //If the position controller is still active, request the switch into velocity controller
+          if(changeControllerType(leg, VELOCITY_CONTROL)){
+            controller_type = VELOCITY_CONTROL;
+          }
+        }
+
+        if(controller_type == VELOCITY_CONTROL){
+          //With the position controller now running, the command msg is built
+          command_msg.data = posControlVel(ang, ang_ref, vel_ref);
+        } 
+      }
 
     }else{
       //Velocity command
       //In velocity command, just the velocity shall be sent
       command_mtx.lock();
-      msg.data = command.vel[leg-1];
+      command_msg.data = command.vel[leg-1];
       command_mtx.unlock();
     }
 
-    controller_command_pub[leg-1].publish(msg);
+    
+    //Sends the msg command depending on whether the control type
+    if(controller_type == POSITION_CONTROL){
+      position_controller_command_pub[leg-1].publish(command_msg);
+    }else if(controller_type == VELOCITY_CONTROL){
+      velocity_controller_command_pub[leg-1].publish(command_msg);
+    }
 
     loop_rate.sleep();
+    
   }
 
   return;
@@ -203,6 +301,7 @@ void jointStatesCallback (const sensor_msgs::JointState::ConstPtr& msg){
     leg_state_msg.vel.push_back(msg->velocity[i]);
     leg_state_msg.torq.push_back(msg->effort[i]);
     leg_state.position[i] = leg_state_msg.pos[i];
+    leg_state.raw_position[i] = msg->position[i];
     leg_state.velocity[i] = leg_state_msg.vel[i];
     leg_state.effort[i] = leg_state_msg.torq[i];
   }
@@ -236,17 +335,19 @@ int main(int argc, char **argv){
 
   ros::Rate loop_rate (LOOP_RATE);
 
-  const std::string controller_namespace = "/hexapodo";
-
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 1000);
   for(int i=0; i < LEG_NUMBER; i++){
-    controller_command_pub.push_back(nh.advertise<std_msgs::Float64>(controller_namespace + "/motor" + std::to_string(i+1) + "_velocity_controller/command", 1000));
+    velocity_controller_command_pub.push_back(nh.advertise<std_msgs::Float64>(controller_namespace + "/motor" + std::to_string(i+1) + "_velocity_controller/command", 1000));
+    position_controller_command_pub.push_back(nh.advertise<std_msgs::Float64>(controller_namespace + "/motor" + std::to_string(i+1) + "_position_controller/command", 1000));
   }
 
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 1000, legCommandCallback);
   ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
+
+  //Client declaration
+  switch_controller_cli = nh.serviceClient<controller_manager_msgs::SwitchController>(controller_namespace + "/controller_manager/switch_controller");
 
   //threads with the control of each leg
   std::thread control_leg_1_thr (control_leg, 1);
