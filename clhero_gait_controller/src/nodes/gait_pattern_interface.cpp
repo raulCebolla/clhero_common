@@ -14,6 +14,7 @@
 #include <clhero_gait_controller/GaitPatternControl.h>
 #include <clhero_gait_controller/PatternCommand.h>
 #include <clhero_gait_controller/ChangeGaitPattern.h>
+#include <clhero_gait_controller/RegisterGaitPattern.h>
 #include <vector>
 #include <string>
 
@@ -277,6 +278,45 @@ bool gaitPatternControlCallback (clhero_gait_controller::GaitPatternControl::Req
   return true;
 }
 
+//Callback for registering a new gait pattern
+bool gaitPatternRegisterCallback (clhero_gait_controller::RegisterGaitPattern::Request &req, 
+                                 clhero_gait_controller::RegisterGaitPattern::Response &res){
+
+  //Node handle
+  ros::NodeHandle nh;
+
+  //List with the registered gait patterns
+  std::vector<std::string> registered_gp;
+
+  //Checks if the parameter exists in the parameter server and in that case takes it.
+  if(nh.hasParam(REGISTERED_GP_PARAM_NAMESPACE)){
+    nh.getParam(REGISTERED_GP_PARAM_NAMESPACE, registered_gp);
+  }else{
+    res.ans = false;
+    return true;
+  }
+
+  //Checks if the pattern name already exists 
+  for(int i = 0; i < registered_gp.size(); i++){
+    if(registered_gp[i].compare(req.pattern_name) == 0){
+      //The name has been already registered
+      res.ans = false;
+      return true;
+    }
+  }
+
+  //Add the new gaitpattern name
+  registered_gp.push_back(req.pattern_name);
+
+  //Upload the new parameter
+  nh.setParam(REGISTERED_GP_PARAM_NAMESPACE, registered_gp);
+
+  res.ans = true;
+
+  return true;
+
+}
+
 //----------------------------------------------------
 //    Main function
 //----------------------------------------------------
@@ -304,6 +344,7 @@ int main(int argc, char **argv){
 
   //Creation of the server for the control service
   ros::ServiceServer gp_control_srv = nh.advertiseService("gait_pattern_control", gaitPatternControlCallback);
+  ros::ServiceServer register_gait_pattern_srv = nh.advertiseService("register_gait_pattern", gaitPatternRegisterCallback);
 
   //----------------------------------------------------
   //    Core loop of the node

@@ -13,6 +13,7 @@
 
 #include <clhero_gait_controller/clhero.h>
 #include <clhero_gait_controller/PatternCommand.h>
+#include <clhero_gait_controller/RegisterGaitPattern.h>
 #include <mutex>
 
 //----------------------------------------------------
@@ -585,19 +586,27 @@ void clhero::registerGaitPattern(std::string name){
 	//Node handle
 	ros::NodeHandle nh;
 
-	//List with the registered gait patterns
-  	std::vector<std::string> registered_gp;
+	//Creates the client
+	ros::ServiceClient client = nh.serviceClient<clhero_gait_controller::RegisterGaitPattern>("register_gait_pattern");
 
-  	//Checks if the parameter exists in the parameter server and in that case takes it.
-  	if(nh.hasParam(REGISTERED_GP_PARAM_NAMESPACE)){
-  		nh.getParam(REGISTERED_GP_PARAM_NAMESPACE, registered_gp);
-  	}
+	//Creates the request
+	clhero_gait_controller::RegisterGaitPattern msg;
 
-	//Add the new gaitpattern name
-  	registered_gp.push_back(name);
+	msg.request.pattern_name = name;
 
-  	//Upload the new parameter
-  	nh.setParam(REGISTERED_GP_PARAM_NAMESPACE, registered_gp);
+	if(!client.call(msg)){
+		std::string error_msg = "Could not call register_gait_pattern service for gait pattern " + name; 
+		ROS_ERROR(error_msg.c_str());
+		return;
+	}
+
+	if(!msg.response.ans){
+		std::string emsg = "Pattern " + name + " could not be registered.";
+		ROS_ERROR(emsg.c_str());
+	}else{
+		std::string succ_msg = "Registered gait pattern: " + name;
+		ROS_INFO(succ_msg.c_str());
+	}
 
   	return;
 	

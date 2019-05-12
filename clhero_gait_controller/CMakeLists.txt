@@ -60,6 +60,7 @@ find_package(catkin REQUIRED COMPONENTS
    LegCommandRequest.srv
    ChangeGaitPattern.srv
    GaitPatternControl.srv
+   RegisterGaitPattern.srv
  )
 
 ## Generate actions in the 'action' folder

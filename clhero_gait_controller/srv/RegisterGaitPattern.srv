@@ -1,0 +1,14 @@
+#================================================================
+# RegisterGaitPattern.srv
+#
+# Description: this service is used to register a new gait 
+# pattern
+#================================================================
+
+#Name of the gait pattern 
+string pattern_name
+
+---
+
+#Response
+bool ans
