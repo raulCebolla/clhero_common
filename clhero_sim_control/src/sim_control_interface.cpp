@@ -202,7 +202,11 @@ double posControlVel (double angle, double angle_ref, double vel_ref){
 
 //Function that turns the readings of position into a range of [0, 360]
 double fixAngle (double angle){
-  return (angle - 2*PI*trunc(angle/(2*PI)));
+  double fixed_angle = (angle - 2*PI*trunc(angle/(2*PI)));
+  /*if(fixed_angle < 0){
+    fixed_angle = 2*PI - fixed_angle;
+  }*/
+  return fixed_angle;
 }
 
 //Thread for each leg command control
