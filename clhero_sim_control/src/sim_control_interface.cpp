@@ -31,12 +31,10 @@
 #define LEG_NUMBER 6 //Number of legs of the robot
 #define CONTROL_RATE 100 //Rate at which the node sends the control of each leg
 #define PI 3.14159265359
-#define ANG_THR 0.03490658503988659 //2*(2*PI)/360
-#define ANG_V 0.17453292519943295 //10*(2*PI)/360
 #define VEL_THR 0.5235987755982988 // = 5 [rpm]
 #define ANG_P_THR 0.08726646259971647 // 5[º]
-#define ANG_V_THR 0.3490658503988659 // 20 [º]
-#define POS_ANG_THR 0.3490658503988659 // 20 [º]
+#define ANG_V_THR 0.6108652381980153 // 35 [º]
+#define REF_ANG_RESOLUTION_LIMIT 0.003490658503988659 // 0.2[º]
 #define POSITION_CONTROL 107
 #define VELOCITY_CONTROL 108
 
@@ -217,7 +215,16 @@ void control_leg (int leg){
   std_msgs::Float64 command_msg;
 
   //Movement control variables
-  double ang, ang_ref, vel_ref;
+  double ang, ang_ref, vel_ref, prev_ang_ref;
+
+  leg_state_mtx.lock();
+  prev_ang_ref = ang = leg_state.position[leg-1];
+  leg_state_mtx.unlock();
+
+  command_mtx.lock();
+  ang_ref = command.pos[leg-1];
+  vel_ref = command.vel[leg-1];
+  command_mtx.unlock();
 
   //Type of the current controller
   int controller_type = VELOCITY_CONTROL;
@@ -254,9 +261,17 @@ void control_leg (int leg){
       }else{
 
         if(controller_type == POSITION_CONTROL){
-          //If the position controller is still active, request the switch into velocity controller
-          if(changeControllerType(leg, VELOCITY_CONTROL)){
-            controller_type = VELOCITY_CONTROL;
+          //The controller shall change into velocity again only if the reference angle is a new one
+          if(fabs(prev_ang_ref - ang_ref) > REF_ANG_RESOLUTION_LIMIT){
+            //If the position controller is still active, request the switch into velocity controller
+            if(changeControllerType(leg, VELOCITY_CONTROL)){
+              controller_type = VELOCITY_CONTROL;
+            }
+          }else{
+            if(controller_type == POSITION_CONTROL){
+              //With the position controller now running, the command msg is built
+              command_msg.data = ang_ref;
+            }  
           }
         }
 
@@ -281,6 +296,8 @@ void control_leg (int leg){
     }else if(controller_type == VELOCITY_CONTROL){
       velocity_controller_command_pub[leg-1].publish(command_msg);
     }
+
+    prev_ang_ref = ang_ref;
 
     loop_rate.sleep();
     
