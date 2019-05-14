@@ -32,7 +32,7 @@
 #define CONTROL_RATE 100 //Rate at which the node sends the control of each leg
 #define PI 3.14159265359
 #define VEL_THR 0.5235987755982988 // = 5 [rpm]
-#define ANG_P_THR 0.08726646259971647 // 5[º]
+#define ANG_P_THR 0.12217304763960307 // 7[º]
 #define ANG_V_THR 0.6108652381980153 // 35 [º]
 #define REF_ANG_RESOLUTION_LIMIT 0.003490658503988659 // 0.2[º]
 #define POSITION_CONTROL 107
@@ -194,7 +194,7 @@ double posControlVel (double angle, double angle_ref, double vel_ref){
     vel = 0;
   }else{
     //vel = (dif_ang - angle_ref)/ANG_V*vel_ref;
-    vel = vel_ref/(ANG_V_THR - ANG_P_THR)*(dif_ang - ANG_P_THR);
+    vel = vel_ref/(ANG_V_THR - 0)*(dif_ang - 0);
   }
 
   return vel;
@@ -203,9 +203,9 @@ double posControlVel (double angle, double angle_ref, double vel_ref){
 //Function that turns the readings of position into a range of [0, 360]
 double fixAngle (double angle){
   double fixed_angle = (angle - 2*PI*trunc(angle/(2*PI)));
-  /*if(fixed_angle < 0){
-    fixed_angle = 2*PI - fixed_angle;
-  }*/
+  if(fixed_angle < 0){
+    fixed_angle = 2*PI + fixed_angle;
+  }
   return fixed_angle;
 }
 

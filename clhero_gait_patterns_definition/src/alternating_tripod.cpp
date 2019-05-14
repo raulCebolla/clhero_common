@@ -24,14 +24,14 @@
 #define STATE_LOOP_RATE 100
 #define PATTERN_NAME "alternating_tripod"
 #define PI 3.14159265359
-#define GROUND_ANGLE 1.0471975511965976/2.0 // 60 [º]
-#define AIR_ANGLE 2*PI-GROUND_ANGLE
+#define GROUND_ANGLE 1.0471975511965976 // 60 [º]
+#define AIR_ANGLE (2*PI-GROUND_ANGLE)
 #define GROUND_VELOCITY 3 // aprox 30 [rpm]
-#define AIR_VELOCITY AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY
+#define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
 #define LEG_NUMBER 6
 #define ANG_THR 0.12217304763960307
-#define LANDING_ANG 2*PI-GROUND_ANGLE/2.0
-#define TAKE_OFF_ANG GROUND_ANGLE/2.0
+#define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
+#define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
 
 //----------------------------------------------------
 //    Global Variables
@@ -105,6 +105,8 @@ void state_1 (clhero::Clhero_robot* clhr){
 		loop_rate.sleep();
 	}
 
+	ROS_ERROR("Exit state 1");
+
 	return;
 }
 
@@ -154,14 +156,20 @@ void state_2 (clhero::Clhero_robot* clhr){
 		for(int i=0; i < tripod_1.size(); i++){
 			if((fabs(state[tripod_1[i]-1] - TAKE_OFF_ANG) < ANG_THR)){
 				legs_in_position++;
+				ROS_ERROR("Leg %d in position", tripod_1[i]);
 			}
 		}
 
 		for(int i=0; i < tripod_2.size(); i++){
-			if((fabs(state[tripod_2[i]-1] - LANDING_ANG) < ANG_THR)){
+			ROS_ERROR("Position leg %d: [%.3f, %.3f]", tripod_2[i], state[tripod_2[i]-1], LANDING_ANG);
+			ROS_ERROR("Diference: %.3f", state[tripod_2[i]-1] - (LANDING_ANG));
+			if((fabs(state[tripod_2[i]-1] - (LANDING_ANG)) < ANG_THR)){
 				legs_in_position++;
+				ROS_ERROR("Leg %d in position", tripod_2[i]);
 			}
 		}
+
+		ROS_ERROR("STATE 2: Legs in position: %d", legs_in_position);
 
 		if(legs_in_position == LEG_NUMBER){
 			clhr->transition(3);
@@ -171,6 +179,8 @@ void state_2 (clhero::Clhero_robot* clhr){
 
 		loop_rate.sleep();
 	}
+
+	ROS_ERROR("Exit state 2");
 
 	return;
 }
@@ -232,7 +242,7 @@ void state_3 (clhero::Clhero_robot* clhr){
 			}
 		}
 
-		ROS_ERROR("legs in position: %d", legs_in_position);
+		ROS_ERROR("STATE 3: Legs in position: %d", legs_in_position);
 
 		if(legs_in_position == LEG_NUMBER){
 			clhr->transition(4);
@@ -242,6 +252,8 @@ void state_3 (clhero::Clhero_robot* clhr){
 
 		loop_rate.sleep();
 	}
+
+	ROS_ERROR("Exit state 3");
 
 	return;
 }
@@ -300,6 +312,8 @@ void state_4 (clhero::Clhero_robot* clhr){
 			}
 		}
 
+		ROS_ERROR("STATE 4: Legs in position: %d", legs_in_position);
+
 		if(legs_in_position == LEG_NUMBER){
 			clhr->transition(3);
 		}else{
@@ -308,6 +322,8 @@ void state_4 (clhero::Clhero_robot* clhr){
 
 		loop_rate.sleep();
 	}
+
+	ROS_ERROR("Exit state 4");
 
 	return;
 }
