@@ -22,16 +22,16 @@
 //Declare the defines needed in the gait pattern
 
 #define STATE_LOOP_RATE 100
-#define PATTERN_NAME "alternating_tripod"
+#define PATTERN_NAME "turn_right_tripod"
 #define PI 3.14159265359
 #define GROUND_ANGLE (1.5707963267948966) // 60 [º]
 #define AIR_ANGLE (2*PI-GROUND_ANGLE)
-#define GROUND_VELOCITY 3 // aprox 30 [rpm]
+#define GROUND_VELOCITY (3) // aprox 30 [rpm]
 #define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
 #define LEG_NUMBER 6
 #define ANG_THR 0.12217304763960307
-#define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
-#define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
+#define ANG_L2 (2*PI-GROUND_ANGLE/2.0)
+#define ANG_L1 (GROUND_ANGLE/2.0)
 
 //----------------------------------------------------
 //    Global Variables
@@ -107,6 +107,7 @@ void state_1 (clhero::Clhero_robot* clhr){
 }
 
 //Estado 2
+//sets the second tripod into an air state
 void state_2 (clhero::Clhero_robot* clhr){
 
 	//------------------------------------------------
@@ -123,11 +124,11 @@ void state_2 (clhero::Clhero_robot* clhr){
 	int legs_in_position = 0;
 
 	for(int i=0; i < tripod_1.size(); i++){
-		clhr->setLegPosition(tripod_1[i], TAKE_OFF_ANG, GROUND_VELOCITY);
+		clhr->setLegPosition(tripod_1[i], 0, GROUND_VELOCITY);
 	}
 
 	for(int i=0; i < tripod_2.size(); i++){
-		clhr->setLegPosition(tripod_2[i], LANDING_ANG, (-1.0)*GROUND_VELOCITY);
+		clhr->setLegPosition(tripod_2[i], PI, GROUND_VELOCITY);
 	}
 
 	//------------------------------------------------
@@ -148,16 +149,20 @@ void state_2 (clhero::Clhero_robot* clhr){
 		state = clhr->getLegsPosition();
 
 		for(int i=0; i < tripod_1.size(); i++){
-			if((fabs(state[tripod_1[i]-1] - TAKE_OFF_ANG) < ANG_THR)){
+			ROS_ERROR("[turn_right]: State: [%d, %.3f, %.3f] Difference: %.3f", tripod_1[i], state[tripod_1[i]-1], (2*PI), fabs(state[tripod_2[i]-1] - (2*PI)));
+			if((fabs(state[tripod_1[i]-1] - 0) < ANG_THR) || (fabs(state[tripod_1[i]-1] - (2*PI)) < ANG_THR)){
 				legs_in_position++;
 			}
 		}
 
 		for(int i=0; i < tripod_2.size(); i++){
-			if((fabs(state[tripod_2[i]-1] - (LANDING_ANG)) < ANG_THR)){
+			ROS_ERROR("[turn_right]: State: [%d, %.3f, %.3f] Difference: %.3f", tripod_2[i], state[tripod_2[i]-1], (PI), fabs(state[tripod_2[i]-1] - (PI)));
+			if((fabs(state[tripod_2[i]-1] - (PI)) < ANG_THR)){				
 				legs_in_position++;
 			}
 		}
+
+		ROS_ERROR("[turn_right]: State %d Legs in position %d", 2, legs_in_position);
 
 		if(legs_in_position == LEG_NUMBER){
 			clhr->transition(3);
@@ -188,11 +193,23 @@ void state_3 (clhero::Clhero_robot* clhr){
 	int legs_in_position = 0;
 
 	for(int i=0; i < tripod_1.size(); i++){
-		clhr->setLegPosition(tripod_1[i], LANDING_ANG, AIR_VELOCITY);
+		if((tripod_1[i]%2) > 0){
+			//If the leg is odd (left side leg)
+			clhr->setLegPosition(tripod_1[i], ANG_L1, GROUND_VELOCITY);
+		}else{
+			//If the leg is even (right side leg)
+			clhr->setLegPosition(tripod_1[i], ANG_L2, (-1.0)*GROUND_VELOCITY);
+		}
 	}
 
 	for(int i=0; i < tripod_2.size(); i++){
-		clhr->setLegPosition(tripod_2[i], TAKE_OFF_ANG, GROUND_VELOCITY);
+		if((tripod_2[i]%2) > 0){
+			//If the leg is odd (left side leg)
+			clhr->setLegPosition(tripod_2[i], ANG_L2, AIR_VELOCITY);
+		}else{
+			//If the leg is even (right side leg)
+			clhr->setLegPosition(tripod_2[i], ANG_L1, (-1.0)*AIR_VELOCITY);
+		}
 	}
 
 	//------------------------------------------------
@@ -213,14 +230,30 @@ void state_3 (clhero::Clhero_robot* clhr){
 		state = clhr->getLegsPosition();
 
 		for(int i=0; i < tripod_1.size(); i++){
-			if((fabs(state[tripod_1[i]-1] - LANDING_ANG) < ANG_THR)){
-				legs_in_position++;
+			if((tripod_1[i]%2) > 0){
+				//If the leg is odd (left side leg)
+				if((fabs(state[tripod_1[i]-1] - ANG_L1) < ANG_THR)){
+					legs_in_position++;
+				}
+			}else{
+				//If the leg is even (right side leg)
+				if((fabs(state[tripod_1[i]-1] - ANG_L2) < ANG_THR)){
+					legs_in_position++;
+				}
 			}
 		}
 
 		for(int i=0; i < tripod_2.size(); i++){
-			if((fabs(state[tripod_2[i]-1] - TAKE_OFF_ANG) < ANG_THR)){
-				legs_in_position++;
+			if((tripod_2[i]%2) > 0){
+				//If the leg is odd (left side leg)
+				if((fabs(state[tripod_2[i]-1] - ANG_L2) < ANG_THR)){
+					legs_in_position++;
+				}
+			}else{
+				//If the leg is even (right side leg)
+				if((fabs(state[tripod_2[i]-1] - ANG_L1) < ANG_THR)){
+					legs_in_position++;
+				}
 			}
 		}
 
@@ -253,11 +286,23 @@ void state_4 (clhero::Clhero_robot* clhr){
 	int legs_in_position = 0;
 
 	for(int i=0; i < tripod_1.size(); i++){
-		clhr->setLegPosition(tripod_1[i], TAKE_OFF_ANG, GROUND_VELOCITY);
+		if((tripod_1[i]%2) > 0){
+			//If the leg is odd (left side leg)
+			clhr->setLegPosition(tripod_1[i], ANG_L2, AIR_VELOCITY);
+		}else{
+			//If the leg is even (right side leg)
+			clhr->setLegPosition(tripod_1[i], ANG_L1, (-1.0)*AIR_VELOCITY);
+		}
 	}
 
 	for(int i=0; i < tripod_2.size(); i++){
-		clhr->setLegPosition(tripod_2[i], LANDING_ANG, AIR_VELOCITY);
+		if((tripod_2[i]%2) > 0){
+			//If the leg is odd (left side leg)
+			clhr->setLegPosition(tripod_2[i], ANG_L1, GROUND_VELOCITY);
+		}else{
+			//If the leg is even (right side leg)
+			clhr->setLegPosition(tripod_2[i], ANG_L2, (-1.0)*GROUND_VELOCITY);
+		}
 	}
 
 	//------------------------------------------------
@@ -278,14 +323,30 @@ void state_4 (clhero::Clhero_robot* clhr){
 		state = clhr->getLegsPosition();
 
 		for(int i=0; i < tripod_1.size(); i++){
-			if((fabs(state[tripod_1[i]-1] - TAKE_OFF_ANG) < ANG_THR)){
-				legs_in_position++;
+			if((tripod_1[i]%2) > 0){
+				//If the leg is odd (left side leg)
+				if((fabs(state[tripod_1[i]-1] - ANG_L2) < ANG_THR)){
+					legs_in_position++;
+				}
+			}else{
+				//If the leg is even (right side leg)
+				if((fabs(state[tripod_1[i]-1] - ANG_L1) < ANG_THR)){
+					legs_in_position++;
+				}
 			}
 		}
 
 		for(int i=0; i < tripod_2.size(); i++){
-			if((fabs(state[tripod_2[i]-1] - LANDING_ANG) < ANG_THR)){
-				legs_in_position++;
+			if((tripod_2[i]%2) > 0){
+				//If the leg is odd (left side leg)
+				if((fabs(state[tripod_2[i]-1] - ANG_L1) < ANG_THR)){
+					legs_in_position++;
+				}
+			}else{
+				//If the leg is even (right side leg)
+				if((fabs(state[tripod_2[i]-1] - ANG_L2) < ANG_THR)){
+					legs_in_position++;
+				}
 			}
 		}
 

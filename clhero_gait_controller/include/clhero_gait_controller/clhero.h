@@ -24,7 +24,7 @@
 //    Defines
 //----------------------------------------------------
 
-#define DEFAULT_VEL 200
+#define DEFAULT_VEL 3.141592653589793 // pi [rad/s]
 #define DEFAULT_ACEL 1200
 #define DEFAULT_GP_NAME "None"
 #define STARTING_STATE true

@@ -25,7 +25,8 @@
 #define LEG_NUMBER 6
 #define PATTERN_COMMAND_RECEPTION_RATE 100
 #define LEG_STATE_RECEPTION_RATE 200
-
+#define REGISTRATION_SRV_NOT_AVAILABLE_LOOP_RATE 50
+#define REGISTRATION_SRV_NOT_AVAILABLE_TRY_LIMIT (20*REGISTRATION_SRV_NOT_AVAILABLE_LOOP_RATE)
 #define DEBUG_MODE true
 
 //----------------------------------------------------
@@ -385,9 +386,9 @@ void Clhero_robot::setLegPosition (int leg,
 
 	//Sends the msg
 	if(command_srv_client.call(msg)){
-		if(msg.response.ans){
+		/*if(msg.response.ans){
 			ROS_ERROR("Invalid command - gait pattern may not be active.");
-		}
+		}*/
 	}else{
 		ROS_ERROR("Command service could not be called.");
 	}
@@ -445,9 +446,9 @@ void Clhero_robot::setLegVelocity (int leg,
 
 	//Sends the msg
 	if(command_srv_client.call(msg)){
-		if(msg.response.ans){
+		/*if(msg.response.ans){
 			ROS_ERROR("Invalid command - gait pattern may not be active.");
-		}
+		}*/
 	}else{
 		ROS_ERROR("Command service could not be called.");
 	}
@@ -592,11 +593,24 @@ void clhero::registerGaitPattern(std::string name){
 	//Creates the request
 	clhero_gait_controller::RegisterGaitPattern msg;
 
+	unsigned int count = 0;
+	ros::Rate server_not_avaiable_loop_rate(REGISTRATION_SRV_NOT_AVAILABLE_LOOP_RATE);
+
 	msg.request.pattern_name = name;
 
-	if(!client.call(msg)){
-		std::string error_msg = "Could not call register_gait_pattern service for gait pattern " + name; 
-		ROS_ERROR(error_msg.c_str());
+	//this register method shall call the registration service to avoid registration failure due
+	//to gait manager not being started
+	while((!client.call(msg)) && (count < REGISTRATION_SRV_NOT_AVAILABLE_TRY_LIMIT)){
+		
+		if (count == 0){
+			std::string error_msg = "Could not call register_gait_pattern service for gait pattern " + name; 	
+			ROS_ERROR(error_msg.c_str());
+		}
+
+		count++;
+
+		server_not_avaiable_loop_rate.sleep();
+
 		return;
 	}
 

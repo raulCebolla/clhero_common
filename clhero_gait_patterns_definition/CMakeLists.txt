@@ -138,6 +138,7 @@ add_executable(complete_wave src/complete_wave.cpp)
 add_executable(test_position_control src/test_position_control.cpp)
 add_executable(test_reverse_position_control src/test_reverse_position_control.cpp)
 add_executable(alternating_tripod src/alternating_tripod.cpp)
+add_executable(alternating_tripod_turn_right src/alternating_tripod_turn_right.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,6 +153,7 @@ add_dependencies(complete_wave ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 add_dependencies(test_position_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(test_reverse_position_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(alternating_tripod ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(alternating_tripod_turn_right ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
@@ -163,6 +165,7 @@ target_link_libraries(complete_wave ${catkin_LIBRARIES})
 target_link_libraries(test_position_control ${catkin_LIBRARIES})
 target_link_libraries(test_reverse_position_control ${catkin_LIBRARIES})
 target_link_libraries(alternating_tripod ${catkin_LIBRARIES})
+target_link_libraries(alternating_tripod_turn_right ${catkin_LIBRARIES})
 
 #############
 ## Install ##
