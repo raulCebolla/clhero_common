@@ -5,4 +5,5 @@
 	<node name="test_reverse_position_control" pkg="clhero_gait_patterns_definition" type="test_reverse_position_control"/>
 	<node name="alternating_tripod" pkg="clhero_gait_patterns_definition" type="alternating_tripod"/>
 	<node name="alternating_tripod_turn_right" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_right"/>
+	<node name="alternating_tripod_turn_left" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_left"/>
 </launch>
