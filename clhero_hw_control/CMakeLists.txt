@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   clhero_gait_controller
   roscpp
+  epos_library
 )
 
 ## System dependencies are found with CMake's conventions
@@ -117,7 +118,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -125,6 +126,7 @@ include_directories(
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/clhero_sim_control.cpp
 # )
+add_library(epos_functions src/libs/epos_functions.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -134,7 +136,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(clhero_hw_control_interface src/hw_control_interface.cpp)
+add_executable(clhero_hw_control_interface src/nodes/hw_control_interface.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -147,6 +149,7 @@ add_executable(clhero_hw_control_interface src/hw_control_interface.cpp)
 add_dependencies(clhero_hw_control_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
+target_link_libraries(epos_functions ${catkin_LIBRARIES})
 target_link_libraries(clhero_hw_control_interface ${catkin_LIBRARIES})
 
 #############
