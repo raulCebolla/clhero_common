@@ -18,24 +18,24 @@ public:
 
     // Abrir Epos
     //int OpenDevice(unsigned int* , int , void* , std::string , std::string , std::string , std::string , int );
-    int OpenDevice(unsigned int*, int);
+    int OpenDevice(unsigned int* errorCode, int node_id);
     // Eliminar fallos
-    int ClearErrors(unsigned int* );
+    int ClearErrors(unsigned int* p_pErrorCode);
 
-    void LogError(std::string , int , unsigned int );
-    void LogInfo(std::string );
+    void LogError(std::string functionName, int p_lResult, unsigned int p_ulErrorCode);
+    void LogInfo(std::string message);
 
-    int ActivateProfilePosition(int);
-    int SetPositionProfile(int, int, int, int);
-    int MoveToPosition(int, int, bool, bool);
-    int GetPosition(int);
-    bool HaltPositionMovement(int);
+    int ActivateProfilePosition(int motor);
+    int SetPositionProfile(int motor, int velocity, int acceleration, int deceleration);
+    int MoveToPosition(int motor, int position, bool absolute, bool inmediately);
+    int GetPosition(int motor);
+    bool HaltPositionMovement(int motor);
 
-    int ActivateProfileVelocity(int);
-    int SetVelocityProfile(int, int, int);
-    int MoveWithVelocity(int, int);
-    int GetVelocity(int);
-    bool HaltVelocityMovement(int);
+    int ActivateProfileVelocity(int motor);
+    int SetVelocityProfile(int motor, int acceleration, int deceleration);
+    int MoveWithVelocity(int motor, int velocity);
+    int GetVelocity(int motor);
+    bool HaltVelocityMovement(int motor);
 
     int GetEffort(int);
 

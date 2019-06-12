@@ -21,6 +21,7 @@
 #include <mutex>
 #include <cmath>
 #include <thread>
+#include <epos_functions/epos_functions.h>
 
 //----------------------------------------------------
 //    Defines
@@ -32,6 +33,7 @@
 #define PI 3.14159265359
 #define ANG_THR 0.03490658503988659 //2*(2*PI)/360
 #define ANG_V 0.17453292519943295 //10*(2*PI)/360
+#define STATE_UPDATE_RATE 200 //Rate at which the state of the legs is update [Hz]
 
 //----------------------------------------------------
 //    Class definitions
@@ -106,41 +108,11 @@ Leg_state leg_state;
 //Legs state mutex
 std::mutex leg_state_mtx;
 
+epos_functions* epos;
+
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
-
-//Function that calcs the velocity for position control
-double posControlVel (double angle, double angle_ref, double vel_ref){
-  
-  double vel;
-
-  //The difference between the position and the reference is set according to the sign
-  //of the velocity
-  double dif_ang;
-  if(vel_ref > 0){
-    dif_ang = angle_ref - angle;
-  }else{
-    dif_ang = angle - angle_ref;
-  }
-
-  //Checks if the difference is negative and changes it in that case
-  if(dif_ang < 0){
-    dif_ang = 2*PI + dif_ang;
-  }
-
-  //calcs the velcity
-  if(dif_ang > ANG_V){
-    //If the difference is great enough, the velocity is the referenced
-    vel = vel_ref;
-  }else if(fabs(angle - angle_ref) < ANG_THR){
-    vel = 0;
-  }else{
-    vel = (dif_ang - angle_ref)/ANG_V*vel_ref;
-  }
-
-  return vel;
-}
 
 //Function that turns the readings of position into a range of [0, 360]
 double fixAngle (double angle){
@@ -148,7 +120,7 @@ double fixAngle (double angle){
 }
 
 //Thread for each leg command control
-void control_leg (int leg){
+/*void control_leg (int leg){
 
   //Rate of the control
   ros::Rate loop_rate (CONTROL_RATE);
@@ -191,9 +163,10 @@ void control_leg (int leg){
   return;
   
 }
+*/
 
 //Callback for joint states msgs
-void jointStatesCallback (const sensor_msgs::JointState::ConstPtr& msg){
+/*void jointStatesCallback (const sensor_msgs::JointState::ConstPtr& msg){
 
   clhero_gait_controller::LegState leg_state_msg;
 
@@ -212,13 +185,56 @@ void jointStatesCallback (const sensor_msgs::JointState::ConstPtr& msg){
 
   return;
 }
+*/
 
 //Callback for leg command msgs
 void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg){
-  command_mtx.lock();
-  command.updateCommand(msg);
-  command_mtx.unlock();
+
+  //Repeats for each of the legs
+  for(int i=0; i<LEG_NUMBER; i++){
+  	
+  	//First checks the mode: position or velocity
+		if(msg->position_command[i].data){
+			//Position command
+
+			//Checks if a new profile shall be set
+			if(msg->new_acel_profile[i].data){
+				//If so, uploads the acceleration and decceleration
+				epos->SetPositionProfile(i+1, (int)rint(msg->vel[i]), (int)rint(msg->acel[i]), (int)rint(msg->decel[i]));
+			}
+
+			//Once the position has been set sends the order
+			epos->MoveToPosition(i+1, (int)rint(msg->pos[i]), TRUE, TRUE);
+		}else{
+			//Velocity command
+
+			//Checks if a new profile shall be set
+			if(msg->new_acel_profile[i].data){
+				//If so, uploads the acceleration and decceleration
+				epos->SetVelocityProfile(i+1, (int)rint(msg->acel[i]), (int)rint(msg->decel[i]));
+			}
+
+			//Once the position has been set sends the order
+			epos->MoveWithVelocity(i+1, (int)rint(msg->vel[i]));
+		}
+  }
+
   return;
+}
+
+//Thread that periodically updates the state of the legs
+void StateUpdateThread (){
+
+	//Creates a node handle to publish the msg
+	ros::NodeHandle nh;
+
+	//Rate in which the state is updated
+	ros::Rate state_update_rate (STATE_UPDATE_RATE);
+
+	//Core loop of the thread
+	while(ros::ok()){
+		
+	}
 }
 
 //----------------------------------------------------
@@ -236,25 +252,31 @@ int main(int argc, char **argv){
 
   ros::Rate loop_rate (LOOP_RATE);
 
-  const std::string controller_namespace = "/hexapodo";
+  //Creates the maxon motors'handler
+  epos = new epos_functions();
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 1000);
+  /*
   for(int i=0; i < LEG_NUMBER; i++){
     controller_command_pub.push_back(nh.advertise<std_msgs::Float64>(controller_namespace + "/motor" + std::to_string(i+1) + "_velocity_controller/command", 1000));
   }
-
+  */
+  
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 1000, legCommandCallback);
-  ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
+  //ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
+  
 
   //threads with the control of each leg
+  /*
   std::thread control_leg_1_thr (control_leg, 1);
   std::thread control_leg_2_thr (control_leg, 2);
   std::thread control_leg_3_thr (control_leg, 3);
   std::thread control_leg_4_thr (control_leg, 4);
   std::thread control_leg_5_thr (control_leg, 5);
   std::thread control_leg_6_thr (control_leg, 6);
+  */
 
   //----------------------------------------------------
   //    Core loop of the node
@@ -265,12 +287,16 @@ int main(int argc, char **argv){
     loop_rate.sleep();
   }
 
+  /*
   control_leg_1_thr.join();
   control_leg_2_thr.join();
   control_leg_3_thr.join();
   control_leg_4_thr.join();
   control_leg_5_thr.join();
   control_leg_6_thr.join();
+  */
+
+  delete epos;
 
   return 0;
 

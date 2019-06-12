@@ -151,6 +151,7 @@ add_dependencies(clhero_hw_control_interface ${${PROJECT_NAME}_EXPORTED_TARGETS}
 ## Specify libraries to link a library or executable target against
 target_link_libraries(epos_functions ${catkin_LIBRARIES})
 target_link_libraries(clhero_hw_control_interface ${catkin_LIBRARIES})
+target_link_libraries(clhero_hw_control_interface epos_functions)
 
 #############
 ## Install ##
