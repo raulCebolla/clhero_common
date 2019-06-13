@@ -39,53 +39,6 @@
 //    Class definitions
 //----------------------------------------------------
 
-//Class that keeps the info of the last msg
-class Command {
-
-  public:
-
-    float pos[LEG_NUMBER];
-    float vel[LEG_NUMBER];
-    float acel[LEG_NUMBER];
-    float decel[LEG_NUMBER];
-    bool new_acel_profile[LEG_NUMBER];
-    bool position_command[LEG_NUMBER];
-
-    //Default constructor
-    Command (){
-      for (int i = 0; i<LEG_NUMBER; i++){
-        pos[i] = 0;
-        vel[i] = 0;
-        acel[i] = 0;
-        decel[i] = 0;
-        new_acel_profile[i] = false;
-        return;
-      }
-    }
-
-    //Method that updates the com
-    void updateCommand (const clhero_gait_controller::LegCommand::ConstPtr& msg){
-      for(int i=0; i<LEG_NUMBER; i++){
-        if( (pos[i] != msg->pos[i]) || (vel[i] != msg->vel[i]) ){
-          pos[i] = msg->pos[i];
-          vel[i] = msg->vel[i];
-          acel[i] = msg->acel[i];
-          decel[i] = msg->decel[i];
-          new_acel_profile[i] = msg->new_acel_profile[i].data;
-          position_command[i] = msg->position_command[i].data;
-        }
-      }
-      return;
-    }
-
-};
-
-struct Leg_state {
-  float position [LEG_NUMBER];
-  float velocity [LEG_NUMBER];
-  float effort [LEG_NUMBER];
-};
-
 //----------------------------------------------------
 //    Global variables
 //----------------------------------------------------
@@ -96,18 +49,7 @@ ros::Publisher legs_state_pub;
 //Publisher of each of the command msgs
 std::vector<ros::Publisher> controller_command_pub;
 
-//Legs'command
-Command command;
-
-//Legs'command mutex
-std::mutex command_mtx;
-
-//State of the legs
-Leg_state leg_state;
-
-//Legs state mutex
-std::mutex leg_state_mtx;
-
+//EPOS control functions class instantiation
 epos_functions* epos;
 
 //----------------------------------------------------
@@ -118,74 +60,6 @@ epos_functions* epos;
 double fixAngle (double angle){
   return (angle - 2*PI*trunc(angle/(2*PI)));
 }
-
-//Thread for each leg command control
-/*void control_leg (int leg){
-
-  //Rate of the control
-  ros::Rate loop_rate (CONTROL_RATE);
-
-  //Message to be sent
-  std_msgs::Float64 msg;
-
-  //Movement control variables
-  double ang, ang_ref, vel_ref;
-
-  while(ros::ok()){
-    //The behaviour of the control shall change whether it is a position command or not
-    if(command.position_command[leg-1]){
-      //Position command
-      
-      leg_state_mtx.lock();
-      ang = leg_state.position[leg-1];
-      leg_state_mtx.unlock();
-
-      command_mtx.lock();
-      ang_ref = command.pos[leg-1];
-      vel_ref = command.vel[leg-1];
-      command_mtx.unlock();
-
-      msg.data = posControlVel(ang, ang_ref, vel_ref);
-
-    }else{
-      //Velocity command
-      //In velocity command, just the velocity shall be sent
-      command_mtx.lock();
-      msg.data = command.vel[leg-1];
-      command_mtx.unlock();
-    }
-
-    controller_command_pub[leg-1].publish(msg);
-
-    loop_rate.sleep();
-  }
-
-  return;
-  
-}
-*/
-
-//Callback for joint states msgs
-/*void jointStatesCallback (const sensor_msgs::JointState::ConstPtr& msg){
-
-  clhero_gait_controller::LegState leg_state_msg;
-
-  leg_state_mtx.lock();
-  for(int i=0; i < LEG_NUMBER; i++){
-    leg_state_msg.pos.push_back(fixAngle(msg->position[i]));
-    leg_state_msg.vel.push_back(msg->velocity[i]);
-    leg_state_msg.torq.push_back(msg->effort[i]);
-    leg_state.position[i] = leg_state_msg.pos[i];
-    leg_state.velocity[i] = leg_state_msg.vel[i];
-    leg_state.effort[i] = leg_state_msg.torq[i];
-  }
-  leg_state_mtx.unlock();
-
-  legs_state_pub.publish(leg_state_msg);
-
-  return;
-}
-*/
 
 //Callback for leg command msgs
 void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg){
@@ -204,7 +78,7 @@ void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg
 			}
 
 			//Once the position has been set sends the order
-			epos->MoveToPosition(i+1, (int)rint(msg->pos[i]), TRUE, TRUE);
+			epos->MoveToPosition(i+1, (int)rint(msg->pos[i]), true, true);
 		}else{
 			//Velocity command
 
@@ -225,16 +99,30 @@ void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg
 //Thread that periodically updates the state of the legs
 void StateUpdateThread (){
 
-	//Creates a node handle to publish the msg
-	ros::NodeHandle nh;
+	//Leg State msg
+	clhero_gait_controller::LegState leg_state_msg;
 
-	//Rate in which the state is updated
+	//Creates the ros rate
 	ros::Rate state_update_rate (STATE_UPDATE_RATE);
 
 	//Core loop of the thread
 	while(ros::ok()){
-		
+
+		//For each leg
+		for(int i = 0; i < LEG_NUMBER; i++){
+			leg_state_msg.pos.push_back(epos->GetPosition(i+1));
+    	leg_state_msg.vel.push_back(epos->GetVelocity(i+1));
+    	leg_state_msg.torq.push_back(0);
+		}
+
+		//Publishes the msg
+		legs_state_pub.publish(leg_state_msg);
+
+		//Sleeps for each loop
+		state_update_rate.sleep();
 	}
+
+	return;
 }
 
 //----------------------------------------------------
@@ -257,44 +145,25 @@ int main(int argc, char **argv){
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 1000);
-  /*
-  for(int i=0; i < LEG_NUMBER; i++){
-    controller_command_pub.push_back(nh.advertise<std_msgs::Float64>(controller_namespace + "/motor" + std::to_string(i+1) + "_velocity_controller/command", 1000));
-  }
-  */
   
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 1000, legCommandCallback);
   //ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
   
-
-  //threads with the control of each leg
-  /*
-  std::thread control_leg_1_thr (control_leg, 1);
-  std::thread control_leg_2_thr (control_leg, 2);
-  std::thread control_leg_3_thr (control_leg, 3);
-  std::thread control_leg_4_thr (control_leg, 4);
-  std::thread control_leg_5_thr (control_leg, 5);
-  std::thread control_leg_6_thr (control_leg, 6);
-  */
+  //threads which helds the status publishing function
+  std::thread state_update_thr (StateUpdateThread);
 
   //----------------------------------------------------
   //    Core loop of the node
   //----------------------------------------------------
 
-  while(ros::ok()){
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+  ros::spin();
 
-  /*
-  control_leg_1_thr.join();
-  control_leg_2_thr.join();
-  control_leg_3_thr.join();
-  control_leg_4_thr.join();
-  control_leg_5_thr.join();
-  control_leg_6_thr.join();
-  */
+  //----------------------------------------------------
+  //    End of node statements
+  //----------------------------------------------------
+
+  state_update_thr.join();
 
   delete epos;
 
