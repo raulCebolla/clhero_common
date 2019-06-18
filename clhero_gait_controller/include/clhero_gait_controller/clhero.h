@@ -7,6 +7,9 @@
 //	Changelog:
 //=====================================================================
 
+#ifndef CLHERO_H
+#define CLHERO_H
+
 //----------------------------------------------------
 //    Includes
 //----------------------------------------------------
@@ -19,6 +22,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <map>
 
 //----------------------------------------------------
 //    Defines
@@ -76,7 +80,8 @@ class Clhero_robot {
 	std::string gp_name;
 
 	//Fields containing the arguments of the movement
-	std::vector<float> args; 
+	//std::vector<float> args; 
+	std::map<std::string, std::string> args;
 
 	//Thread that handles the pattern command msg reception
 	std::thread *pattern_command_reception_thread;
@@ -174,6 +179,9 @@ public:
 	std::vector<float> getLegsVelocity();
 	std::vector<float> getLegsTorque();
 
+	//Function that returns the arguments
+	std::map<std::string, std::string> getArgs();
+
 };
 
 //----------------------------------------------------
@@ -201,3 +209,6 @@ void handle_leg_state_reception (Clhero_robot* clhr);
 void handle_active_state(Clhero_robot* clhr);
 
 }
+
+
+#endif

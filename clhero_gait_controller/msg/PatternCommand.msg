@@ -14,7 +14,7 @@ string pattern_name
 #In this variable shall be set arguments such as the velocity or
 #the legs contact angle.
 
-float32[] args
+string args
 
 #Order
 #	- stop: stop the gait pattern at an initial or emergency state

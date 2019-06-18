@@ -15,6 +15,10 @@
 #include <clhero_gait_controller/PatternCommand.h>
 #include <clhero_gait_controller/RegisterGaitPattern.h>
 #include <mutex>
+#include <map>
+#include <vector>
+#include <string>
+#include <cstddef>
 
 //----------------------------------------------------
 //    Defines
@@ -48,6 +52,68 @@ std::mutex leg_state_mutex;
 //----------------------------------------------------
 //    Function definition
 //----------------------------------------------------
+
+//Function that creates the argument dictionary from a formated string
+//The string shall be formated by: key: value, key: value, [...]
+std::map<std::string, std::string> parseargs2map (std::string args_str){
+	//Map with the mapped arguments
+	std::map<std::string, std::string> arg_map;
+	//Vector with the key value pairs
+	std::vector<std::string> key_value_pairs;
+
+	//First separates the input string into the different key-values pairs
+	std::size_t pos = 0, prev_pos = 0;
+	while((pos = args_str.find(',', pos+1)) != std::string::npos){
+		if(!prev_pos){
+			//if it is the first pair
+			key_value_pairs.push_back(args_str.substr(prev_pos, (pos - prev_pos)));
+		}else{
+			key_value_pairs.push_back(args_str.substr(prev_pos + 1, (pos - prev_pos)));
+		}
+		prev_pos = pos;
+	}
+	//Adds the last to the list
+	if(!prev_pos){
+		//if it is the first pair
+		key_value_pairs.push_back(args_str.substr(prev_pos));
+	}else{
+		key_value_pairs.push_back(args_str.substr(prev_pos + 1));
+	}
+
+	//Parses each key-value pair
+	std::size_t separator_pos = 0;
+	std::string key, value;
+	for(int i=0; i<key_value_pairs.size(); i++){
+		//For each pair
+
+		if((separator_pos = key_value_pairs[i].find(':')) == std::string::npos){
+			//if a pair does not have a separator mark (:), discard this pair
+			continue;
+		}else{
+			key = key_value_pairs[i].substr(0, separator_pos);
+			value = key_value_pairs[i].substr(separator_pos + 1);
+
+			//erases the whitespaces at the beginning and in the end of the string
+			if(key[0] == ' '){
+				key.erase(0,1);
+			}
+			if(key[key.size()-1] == ' '){
+				key.erase(key.size()-1,1);
+			}
+			if(value[0] == ' '){
+				value.erase(0,1);
+			}
+			if(value[value.size()-1] == ' '){
+				value.erase(value.size()-1,1);
+			}
+
+			//Inserts the pair to the map
+			arg_map[key] = value;
+		}
+	}
+
+	return arg_map;
+}
 
 //Friend function that handles the pattern command msg
 void clhero::handle_pattern_command_msg(const clhero_gait_controller::PatternCommand::ConstPtr& msg){
@@ -122,8 +188,8 @@ void clhero::handle_pattern_command_msg(const clhero_gait_controller::PatternCom
 		#endif
 
 		//Forces a new transition to the specified status given as argument
-		int new_status = (int) msg->args[0];
-		hex->forceTransition(new_status);
+		//int new_status = (int) msg->args[0];
+		//hex->forceTransition(new_status);
 
 	}
 
@@ -136,7 +202,7 @@ void clhero::handle_pattern_command_msg(const clhero_gait_controller::PatternCom
 		#endif
 
 		//Copy the new args
-		hex->args = msg->args;
+		hex->args = parseargs2map(msg->args);
 
 	}
 
@@ -579,6 +645,10 @@ std::vector<float> Clhero_robot::getLegsTorque(){
 	ls = this->leg_state.torq;
 	leg_state_mutex.unlock();
 	return ls;
+}
+
+std::map<std::string, std::string> Clhero_robot::getArgs(){
+	return this->args;
 }
 
 //Function usedo to register a new gait pattern on the parameter server
