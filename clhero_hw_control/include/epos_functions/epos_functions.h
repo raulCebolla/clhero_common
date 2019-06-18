@@ -14,6 +14,7 @@ private:
 
 public:
     epos_functions();
+    ~epos_functions();
     void SetDefaultParameters(int ); //Creo que esta no hace falta para nada
 
     // Abrir Epos

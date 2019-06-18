@@ -70,7 +70,7 @@ void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg
   	//First checks the mode: position or velocity
 		if(msg->position_command[i].data){
 			//Position command
-
+			epos->ActivateProfilePosition(i+1);
 			//Checks if a new profile shall be set
 			if(msg->new_acel_profile[i].data){
 				//If so, uploads the acceleration and decceleration
@@ -81,7 +81,7 @@ void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg
 			epos->MoveToPosition(i+1, (int)rint(msg->pos[i]), true, true);
 		}else{
 			//Velocity command
-
+			epos->ActivateProfileVelocity(i+1);
 			//Checks if a new profile shall be set
 			if(msg->new_acel_profile[i].data){
 				//If so, uploads the acceleration and decceleration
@@ -111,12 +111,16 @@ void StateUpdateThread (){
 		//For each leg
 		for(int i = 0; i < LEG_NUMBER; i++){
 			leg_state_msg.pos.push_back(epos->GetPosition(i+1));
-    	leg_state_msg.vel.push_back(epos->GetVelocity(i+1));
-    	leg_state_msg.torq.push_back(0);
+    			leg_state_msg.vel.push_back(epos->GetVelocity(i+1));
+    			leg_state_msg.torq.push_back(0);
 		}
 
 		//Publishes the msg
 		legs_state_pub.publish(leg_state_msg);
+
+		leg_state_msg.pos.clear();
+		leg_state_msg.vel.clear();
+		leg_state_msg.torq.clear();
 
 		//Sleeps for each loop
 		state_update_rate.sleep();
