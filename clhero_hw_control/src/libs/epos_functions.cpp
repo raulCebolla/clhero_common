@@ -1,5 +1,7 @@
 #include "epos_functions/epos_functions.h"
 
+#define PI 3.14159265359
+
 epos_functions::epos_functions()
 {
     this->ulErrorCode = 0;
@@ -238,13 +240,14 @@ int epos_functions::MoveToPosition(int motor, int position, bool absolute, bool 
 }
 
 /**** Función para obtener la posición actual del motor ****/
-int epos_functions::GetPosition(int motor)
+//En rads
+double epos_functions::GetPosition(int motor)
 {
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
     int position_actual_raw = 0;
-    int position_actual = 0;
+    double position_actual = 0;
     if((result = VCS_GetPositionIs(keyHandle_local, motor, &position_actual_raw, &error_code)) == 0)
     {
         ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
@@ -252,7 +255,7 @@ int epos_functions::GetPosition(int motor)
         result = 0;
         return result;
     }
-    position_actual = (position_actual_raw * 360) / (4000 * 33); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
+    position_actual = (position_actual_raw * 2 * PI) / (4000.0 * 33.0); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
     return position_actual;
 }
 
@@ -327,13 +330,14 @@ int epos_functions::MoveWithVelocity(int motor, int velocity){
 
 }
 
-int epos_functions::GetVelocity(int motor){
+//En rad/s
+double epos_functions::GetVelocity(int motor){
 
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
     int velocity_actual_raw = 0;
-    int velocity_actual = 0;
+    double velocity_actual = 0;
     
     if((result = VCS_GetVelocityIs(keyHandle_local, motor, &velocity_actual_raw, &error_code)) == 0)
     {
@@ -343,7 +347,7 @@ int epos_functions::GetVelocity(int motor){
         return result;
     }
     
-    velocity_actual = (velocity_actual_raw/33); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
+    velocity_actual = (velocity_actual_raw/33.0/60.0); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
     return velocity_actual;
 }
 

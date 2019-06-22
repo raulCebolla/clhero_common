@@ -4,6 +4,12 @@
 #include <std_msgs/String.h>
 #include <ros/ros.h>
 #include <epos_library/Definitions.h>
+#include <cmath>
+
+//Unidades de maxon:
+//  Posición    [grados]
+//  Velocidad   [rpm]
+//  Aceleración [rpm/s]
 
 class epos_functions
 {
@@ -29,13 +35,13 @@ public:
     int ActivateProfilePosition(int motor);
     int SetPositionProfile(int motor, int velocity, int acceleration, int deceleration);
     int MoveToPosition(int motor, int position, bool absolute, bool inmediately);
-    int GetPosition(int motor);
+    double GetPosition(int motor);
     bool HaltPositionMovement(int motor);
 
     int ActivateProfileVelocity(int motor);
     int SetVelocityProfile(int motor, int acceleration, int deceleration);
     int MoveWithVelocity(int motor, int velocity);
-    int GetVelocity(int motor);
+    double GetVelocity(int motor);
     bool HaltVelocityMovement(int motor);
 
     int GetEffort(int);
