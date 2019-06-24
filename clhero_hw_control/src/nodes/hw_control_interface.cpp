@@ -35,6 +35,9 @@
 #define ANG_V 0.17453292519943295 //10*(2*PI)/360
 #define STATE_UPDATE_RATE 200 //Rate at which the state of the legs is update [Hz]
 #define POS_COMMAND_THR 0.008726646259971648 //Threshold in which a position command is considered the same [0.5 deg]
+#define DEFAULT_VEL 3.141592653589793 // 0.5 rev/s = 30 rpm
+#define DEFAULT_ACCEL 125.66370614359172 // 1200 rpm/s
+#define DEFAULT_DECEL 125.66370614359172 // 1200 rpm/s
 
 //----------------------------------------------------
 //    Class definitions
@@ -58,7 +61,7 @@ epos_functions* epos;
 //----------------------------------------------------
 
 //Function that turns rad/s into rpm
-double rads2rpm (double rads){
+inline double rads2rpm (double rads){
 	return rads*60/(2*PI);
 }
 
@@ -127,26 +130,35 @@ void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg
   	//First checks the mode: position or velocity
 		if(msg->position_command[i].data){
 			//Position command
+
+			//Absolute position
+			double abs_position;
+
+			//Activates the position mode
 			epos->ActivateProfilePosition(i+1);
 			//Checks if a new profile shall be set
 			if(msg->new_acel_profile[i].data){
 				//If so, uploads the acceleration and decceleration
-				epos->SetPositionProfile(i+1, (int)rint(msg->vel[i]), (int)rint(msg->acel[i]), (int)rint(msg->decel[i]));
+				epos->SetPositionProfile(i+1, fabs(msg->vel[i]), msg->acel[i], msg->decel[i]);
 			}
 
+			//Gets the absolute position based on the position command, velocity and current position
+			abs_position = turnAbsolutePosition(msg->pos[i], msg->vel[i], epos->GetPosition(i+1));
 			//Once the position has been set sends the order
-			epos->MoveToPosition(i+1, (int)rint(msg->pos[i]), true, true);
+			epos->MoveToPosition(i+1, abs_position, true, true);
 		}else{
 			//Velocity command
+
+			//Activates the velocity profile
 			epos->ActivateProfileVelocity(i+1);
 			//Checks if a new profile shall be set
 			if(msg->new_acel_profile[i].data){
 				//If so, uploads the acceleration and decceleration
-				epos->SetVelocityProfile(i+1, (int)rint(msg->acel[i]), (int)rint(msg->decel[i]));
+				epos->SetVelocityProfile(i+1, msg->acel[i], msg->decel[i]);
 			}
 
 			//Once the position has been set sends the order
-			epos->MoveWithVelocity(i+1, (int)rint(msg->vel[i]));
+			epos->MoveWithVelocity(i+1, msg->vel[i]);
 		}
   }
 
@@ -168,8 +180,8 @@ void StateUpdateThread (){
 		//For each leg
 		for(int i = 0; i < LEG_NUMBER; i++){
 			leg_state_msg.pos.push_back(epos->GetPosition(i+1));
-    			leg_state_msg.vel.push_back(epos->GetVelocity(i+1));
-    			leg_state_msg.torq.push_back(0);
+    		leg_state_msg.vel.push_back(epos->GetVelocity(i+1));
+    		leg_state_msg.torq.push_back(0);
 		}
 
 		//Publishes the msg
@@ -203,6 +215,12 @@ int main(int argc, char **argv){
 
   //Creates the maxon motors'handler
   epos = new epos_functions();
+
+  //Sets the default profile
+  for(int i = 0; i < LEG_NUMBER; i++){
+  	epos->SetPositionProfile(i+1, DEFAULT_VEL, DEFAULT_ACCEL, DEFAULT_DECEL);
+  	epos->SetVelocityProfile(i+1, DEFAULT_ACCEL, DEFAULT_DECEL);
+  }
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 1000);

@@ -1,6 +1,13 @@
 #include "epos_functions/epos_functions.h"
+#include <cmath>
 
 #define PI 3.14159265359
+#define REDUCTION 33
+#define RADS_PER_REV (2*PI)
+#define DEG_PER_REV 360
+#define PULSES_PER_REV 4000
+
+#define UNITS_PER_REV RADS_PER_REV
 
 epos_functions::epos_functions()
 {
@@ -211,12 +218,17 @@ int epos_functions::ActivateProfilePosition(int motor)
 }
 
 /**** Funcion para definir el trapecio de velocidad en el perfil de posicion ****/
-int epos_functions::SetPositionProfile(int motor, int velocity, int acceleration, int deceleration)
+int epos_functions::SetPositionProfile(int motor, double velocity, double acceleration, double deceleration)
 {
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
-    if((result = VCS_SetPositionProfile(keyHandle_local, motor, velocity, acceleration, deceleration, &error_code)) == 0)
+
+    velocity = velocity*60/(UNITS_PER_REV);
+    acceleration = acceleration*60/(UNITS_PER_REV);
+    deceleration = deceleration*60/(UNITS_PER_REV);
+    
+    if((result = VCS_SetPositionProfile(keyHandle_local, motor, (int)rint(velocity), (int)rint(acceleration), (int)rint(deceleration), &error_code)) == 0)
     {
         ROS_INFO("ERROR: No se ha podido cargar el perfil de velocidad en el motor %d", motor);
 		LogError("SetProfilePosition", result, error_code);
@@ -225,13 +237,13 @@ int epos_functions::SetPositionProfile(int motor, int velocity, int acceleration
 }
 
 /**** Función para mover el motor hasta una posición con un perfil de velocidad ****/
-int epos_functions::MoveToPosition(int motor, int position, bool absolute, bool inmediately)
+int epos_functions::MoveToPosition(int motor, double position, bool absolute, bool inmediately)
 {
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
-    int position_encoder = position * (4000 * 33) / 360;    // Posicion_deseada * (encoder * reductora) / grados_una_vuelta
-    if((result = VCS_MoveToPosition(keyHandle_local, motor, position_encoder, absolute, inmediately, &error_code)) == 0)
+    int position_encoder = position * (4000 * REDUCTION) / (UNITS_PER_REV);    // Posicion_deseada * (encoder * reductora) / grados_una_vuelta
+    if((result = VCS_MoveToPosition(keyHandle_local, motor, (int)rint(position_encoder), absolute, inmediately, &error_code)) == 0)
     {
         ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
 		LogError("MoveToPosition", result, error_code);
@@ -298,13 +310,16 @@ int epos_functions::ActivateProfileVelocity(int motor){
 
 }
 
-int epos_functions::SetVelocityProfile(int motor, int acceleration, int deceleration){
+int epos_functions::SetVelocityProfile(int motor, double acceleration, double deceleration){
 
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
+
+    acceleration = acceleration*60/(UNITS_PER_REV);
+    deceleration = deceleration*60/(UNITS_PER_REV);
     
-    if((result = VCS_SetVelocityProfile(keyHandle_local, motor, acceleration, deceleration, &error_code)) == 0)
+    if((result = VCS_SetVelocityProfile(keyHandle_local, motor, (int)rint(acceleration), (int)rint(deceleration), &error_code)) == 0)
     {
         ROS_INFO("ERROR: No se ha podido cargar el perfil de velocidad en el motor %d", motor);
 		LogError("SetVelocityProfile", result, error_code);
@@ -313,14 +328,14 @@ int epos_functions::SetVelocityProfile(int motor, int acceleration, int decelera
     return result;
 }
 
-int epos_functions::MoveWithVelocity(int motor, int velocity){
+int epos_functions::MoveWithVelocity(int motor, double velocity){
 
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
-    int velocity_encoder = velocity*33;    // Posicion_deseada * (encoder * reductora) / grados_una_vuelta
+    int velocity_encoder = velocity/(UNITS_PER_REV)*60*REDUCTION;    // Posicion_deseada * (encoder * reductora) / grados_una_vuelta
     
-    if((result = VCS_MoveWithVelocity(keyHandle_local, motor, velocity_encoder, &error_code)) == 0)
+    if((result = VCS_MoveWithVelocity(keyHandle_local, motor, (int)rint(velocity_encoder), &error_code)) == 0)
     {
         ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
 		LogError("MoveWithVelocity", result, error_code);    
@@ -347,7 +362,7 @@ double epos_functions::GetVelocity(int motor){
         return result;
     }
     
-    velocity_actual = (velocity_actual_raw/33.0/60.0); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
+    velocity_actual = (velocity_actual_raw / REDUCTION / 60.0 * UNITS_PER_REV); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
     return velocity_actual;
 }
 

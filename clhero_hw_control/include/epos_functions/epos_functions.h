@@ -33,14 +33,14 @@ public:
     void LogInfo(std::string message);
 
     int ActivateProfilePosition(int motor);
-    int SetPositionProfile(int motor, int velocity, int acceleration, int deceleration);
-    int MoveToPosition(int motor, int position, bool absolute, bool inmediately);
+    int SetPositionProfile(int motor, double velocity, double acceleration, double deceleration);
+    int MoveToPosition(int motor, double position, bool absolute, bool inmediately);
     double GetPosition(int motor);
     bool HaltPositionMovement(int motor);
 
     int ActivateProfileVelocity(int motor);
-    int SetVelocityProfile(int motor, int acceleration, int deceleration);
-    int MoveWithVelocity(int motor, int velocity);
+    int SetVelocityProfile(int motor, double acceleration, double deceleration);
+    int MoveWithVelocity(int motor, double velocity);
     double GetVelocity(int motor);
     bool HaltVelocityMovement(int motor);
 
