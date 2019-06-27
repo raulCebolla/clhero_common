@@ -224,7 +224,7 @@ int epos_functions::SetPositionProfile(int motor, double velocity, double accele
     unsigned int error_code = 0;
     int result = 0;
 
-    velocity = velocity*60/(UNITS_PER_REV);
+    velocity = velocity*60/(UNITS_PER_REV)*REDUCTION;
     acceleration = acceleration*60/(UNITS_PER_REV);
     deceleration = deceleration*60/(UNITS_PER_REV);
     
@@ -268,6 +268,7 @@ double epos_functions::GetPosition(int motor)
         return result;
     }
     position_actual = (position_actual_raw * 2 * PI) / (4000.0 * 33.0); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
+
     return position_actual;
 }
 
@@ -333,7 +334,7 @@ int epos_functions::MoveWithVelocity(int motor, double velocity){
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
-    int velocity_encoder = velocity/(UNITS_PER_REV)*60*REDUCTION;    // Posicion_deseada * (encoder * reductora) / grados_una_vuelta
+    int velocity_encoder = velocity*60.0/(UNITS_PER_REV)*REDUCTION;    // Posicion_deseada * (encoder * reductora) / grados_una_vuelta
     
     if((result = VCS_MoveWithVelocity(keyHandle_local, motor, (int)rint(velocity_encoder), &error_code)) == 0)
     {
