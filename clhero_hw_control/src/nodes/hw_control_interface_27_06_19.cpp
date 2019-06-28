@@ -1,4 +1,3 @@
-
 //=====================================================================
 //	Author:	Raúl Cebolla Arroyo
 //	File:
@@ -16,22 +15,19 @@
 #include <sensor_msgs/JointState.h>
 #include <clhero_gait_controller/LegCommand.h>
 #include <clhero_gait_controller/LegState.h>
-#include <clhero_gait_controller/PatternCommand.h>
 #include <iostream>
 #include <vector>
 #include <string>
-#include <cstring>
 #include <mutex>
 #include <cmath>
 #include <thread>
 #include <epos_functions/epos_functions.h>
 
-
 //----------------------------------------------------
 //    Defines
 //----------------------------------------------------
 
-#define LOOP_RATE 1000 //Rate at which the node checks for callbacks
+#define LOOP_RATE 500 //Rate at which the node checks for callbacks
 #define LEG_NUMBER 6 //Number of legs of the robot
 #define CONTROL_RATE 100 //Rate which the node sends the control of each leg
 #define PI 3.14159265359
@@ -48,7 +44,7 @@
 //    Class definitions
 //----------------------------------------------------
 
-/*class CommandMsgManager{
+class CommandMsgManager{
 
 	clhero_gait_controller::LegCommand current_command;
 	clhero_gait_controller::LegCommand fixed_command;
@@ -68,7 +64,7 @@ public:
 
 	void commandAllMotors();
 
-};*/
+};
 
 //----------------------------------------------------
 //    Global variables
@@ -84,14 +80,14 @@ std::vector<ros::Publisher> controller_command_pub;
 epos_functions* epos_f;
 
 //Command msg manager
-//CommandMsgManager* com_man;
+CommandMsgManager* com_man;
 
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
 
 //Function that maps the motors
-/*int mapMotor (int motor){
+int mapMotor (int motor){
 	switch (motor){
 		case 1:
 			return 6;
@@ -108,15 +104,15 @@ epos_functions* epos_f;
 		default:
 			return 0;
 	}
-}*/
+}
 
 //Function that turns rad/s into rpm
-/*inline double rads2rpm (double rads){
+inline double rads2rpm (double rads){
 	return rads*60/(2*PI);
-}*/
+}
 
 //Function that checks if one leg has its turning direction with the opposite sign
-/*inline bool checkNegativeMotor (int motor){
+inline bool checkNegativeMotor (int motor){
 	switch (motor){
 		case 1:
 			return true;
@@ -128,11 +124,11 @@ epos_functions* epos_f;
 			return false;
 	}
 	return false;
-}*/
+}
 
 //Function that turns a relative position command [0, 2pi) into an absolute position based
 //on the accumulate position of the motor
-/*double turnAbsolutePosition (double pos_command, double vel_command, double curr_position){
+double turnAbsolutePosition (double pos_command, double vel_command, double curr_position){
 	
 	long n = 0;
 	double fixed_command;
@@ -156,57 +152,24 @@ epos_functions* epos_f;
 	}
 
 	return fixed_command;
-}*/
-/*
+}
+
 //Function that turns the readings of position into a range of [0, 360]
 double fixAngle (double angle){
   return (angle - 2*PI*trunc(angle/(2*PI)));
-}*/
+}
 
 //Callback for leg command msgs
 void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg){
 
-	/*float current_pos = msg->pos[0];
-	float current_vel = msg->vel[0];
-	float current_acel = msg->acel[0];
-	float current_decel = msg->decel[0];
-	bool current_new_acel_profile = msg->new_acel_profile[0].data;
-	bool current_position_command = msg->position_command[0].data;
-
-	ROS_INFO("pata 1 : pos = %.2f -- vel = %.2f -- acel = %.2f -- decel = %.2f", current_pos, current_vel, current_acel, current_decel);
-	
-	epos_f->SetPositionProfile(1, current_vel, current_acel, current_decel);
-	epos_f->MoveToPosition(1, current_pos, true, true);*/
-
-	//com_man->evaluateNewCommand(msg);
-	//com_man->commandAllMotors();
+	com_man->evaluateNewCommand(msg);
+	com_man->commandAllMotors();
 
  	return;
 }
 
-void patternCommandCallback (const clhero_gait_controller::PatternCommand::ConstPtr& msg){
-	std::string gait_mode = msg->pattern_name;
-
-	static std::string gait_actual = "";
-	static std::string gait_old = "";
-
-	//Comparo el modo de marcha seleccionado
-	//Si es igual, significa que estoy el mismo modo. No hago nada
-	if(gait_actual.compare(gait_mode) == 0)
-	{
-		ROS_INFO("Mismo modo");
-
-	} else {
-		ROS_INFO("Nuevo modo");
-		gait_actual = gait_actual + gait_mode;
-		ROS_INFO_STREAM(gait_actual);
-	}
-
-
-}
-
 //Thread that periodically updates the state of the legs
-/*void StateUpdateThread (){
+void StateUpdateThread (){
 
 	//Leg State msg
 	clhero_gait_controller::LegState leg_state_msg;
@@ -254,7 +217,7 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 	}
 
 	return;
-}*/
+}
 
 //----------------------------------------------------
 //    Class definitions
@@ -262,7 +225,7 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 
 
 //Function that checks if one leg has its turning direction with the opposite sign
-/*bool CommandMsgManager::checkNegativeMotor (int motor){
+bool CommandMsgManager::checkNegativeMotor (int motor){
 	switch (motor){
 		case 1:
 			return true;
@@ -274,9 +237,9 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 			return false;
 	}
 	return false;
-}*/
+}
 
-/*void CommandMsgManager::fixNewCommand (){
+void CommandMsgManager::fixNewCommand (){
 	//For each leg
 	for(int i=0; i<LEG_NUMBER; i++){
 		//If there is a new command to be treated
@@ -333,9 +296,9 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 			}
 		}
 	}
-}*/
+}
 
-/*CommandMsgManager::CommandMsgManager(epos_functions* e){
+CommandMsgManager::CommandMsgManager(epos_functions* e){
 	
 	this->epos = e;
 
@@ -354,9 +317,9 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 		fixed_command.position_command[i].data = false;
 	}
 
-}*/
+}
 
-/*void CommandMsgManager::evaluateNewCommand(const clhero_gait_controller::LegCommand::ConstPtr& msg){
+void CommandMsgManager::evaluateNewCommand(const clhero_gait_controller::LegCommand::ConstPtr& msg){
 	
 	for(int i=0; i<LEG_NUMBER; i++){
 
@@ -400,17 +363,15 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 			current_command.acel[i] = msg->acel[i];
 			current_command.decel[i] = msg->decel[i];
 			current_command.new_acel_profile[i].data = msg->new_acel_profile[i].data;
-			current_command.position_command[i].data = msg->position_command[i].data;
-			
-			ROS_INFO("pata %d : pos = %.2f -- vel = %.2f -- acel = %.2f -- decel = %.2f", i, current_command.pos[i], current_command.vel[i], current_command.acel[i], current_command.decel[i]);
+			current_command.position_command[i].data = msg->position_command[i].data;			
 		}
 	}
 
 	this->fixNewCommand();
 	return;
-}*/
+}
 
-/*void CommandMsgManager::commandAllMotors(){
+void CommandMsgManager::commandAllMotors(){
 	for(int i=0; i<LEG_NUMBER; i++){
 		if(is_new_command[i]){
 			if(fixed_command.position_command[i].data){
@@ -424,7 +385,7 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 		is_new_command[i] = false;
 	}
 	return;
-}*/
+}
 
 //----------------------------------------------------
 //    Main function
@@ -436,7 +397,7 @@ int main(int argc, char **argv){
   //    ROS starting statements
   //----------------------------------------------------
 
-  ros::init(argc, argv, "clhero_hardware_interface");
+  ros::init(argc, argv, "clhero_simulation_interface");
   ros::NodeHandle nh;
 
   ros::Rate loop_rate (LOOP_RATE);
@@ -445,28 +406,24 @@ int main(int argc, char **argv){
   epos_f = new epos_functions();
 
   //Sets the default profile
-  /*for(int i = 0; i < LEG_NUMBER; i++){
+  for(int i = 0; i < LEG_NUMBER; i++){
   	epos_f->ActivateProfilePosition(mapMotor(i+1));
   	epos_f->SetPositionProfile(mapMotor(i+1), DEFAULT_VEL, DEFAULT_ACCEL, DEFAULT_DECEL);
   	//epos_f->SetVelocityProfile(mapMotor(i+1), DEFAULT_ACCEL, DEFAULT_DECEL);
-  }*/
-  epos_f->ActivateProfilePosition(1);
-  epos_f->SetPositionProfile(1, DEFAULT_VEL, DEFAULT_ACCEL, DEFAULT_DECEL);
+  }
 
   //Creates the msg manager
-  //com_man = new CommandMsgManager(epos_f);
+  com_man = new CommandMsgManager(epos_f);
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 1);
   
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 1, legCommandCallback);
-  ros::Subscriber pattern_command_sub = nh.subscribe("pattern_command", 1, patternCommandCallback);
-
   //ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
   
   //threads which helds the status publishing function
-  //std::thread state_update_thr (StateUpdateThread);
+  std::thread state_update_thr (StateUpdateThread);
 
   //----------------------------------------------------
   //    Core loop of the node
@@ -480,10 +437,10 @@ int main(int argc, char **argv){
   //    End of node statements
   //----------------------------------------------------
 
-  //state_update_thr.join();
+  state_update_thr.join();
 
-  //delete epos_f;
-  //delete com_man;
+  delete epos_f;
+  delete com_man;
 
   return 0;
 
