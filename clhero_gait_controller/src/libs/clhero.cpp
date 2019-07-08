@@ -31,7 +31,7 @@
 #define LEG_STATE_RECEPTION_RATE 200
 #define REGISTRATION_SRV_NOT_AVAILABLE_LOOP_RATE 50
 #define REGISTRATION_SRV_NOT_AVAILABLE_TRY_LIMIT (20*REGISTRATION_SRV_NOT_AVAILABLE_LOOP_RATE)
-#define DEBUG_MODE true
+//#define DEBUG_MODE true
 
 //----------------------------------------------------
 //    Namespace

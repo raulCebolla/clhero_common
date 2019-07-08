@@ -51,6 +51,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>common_hex</build_depend>
   <build_depend>roscpp</build_depend>
+  <build_depend>chrono_register</build_depend>
   <build_export_depend>common_hex</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <exec_depend>common_hex</exec_depend>

@@ -28,8 +28,8 @@
 //    Defines
 //----------------------------------------------------
 
-#define DEFAULT_VEL 3.141592653589793 // pi [rad/s]
-#define DEFAULT_ACEL 1200
+#define DEFAULT_VEL (2*3.141592653589793) // pi [rad/s]
+#define DEFAULT_ACEL 1256.6370614359172
 #define DEFAULT_GP_NAME "None"
 #define STARTING_STATE true
 
@@ -141,14 +141,14 @@ public:
 	void setLegPosition (int leg, 
 						float positions, 
 						float velocity = DEFAULT_VEL,
-						bool new_acel_profile = false,
+						bool new_acel_profile = true,
 						float acel = DEFAULT_ACEL,
 						float decel = DEFAULT_ACEL);
 
 	//Set the Velocity for a leg
 	void setLegVelocity (int leg,  
 						float velocity,
-						bool new_acel_profile = false,
+						bool new_acel_profile = true,
 						float acel = DEFAULT_ACEL,
 						float decel = DEFAULT_ACEL);
 

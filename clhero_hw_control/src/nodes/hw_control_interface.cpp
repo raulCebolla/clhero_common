@@ -1,4 +1,3 @@
-
 //=====================================================================
 //	Author:	Raúl Cebolla Arroyo
 //	File:
@@ -16,22 +15,23 @@
 #include <sensor_msgs/JointState.h>
 #include <clhero_gait_controller/LegCommand.h>
 #include <clhero_gait_controller/LegState.h>
-#include <clhero_gait_controller/PatternCommand.h>
 #include <iostream>
 #include <vector>
 #include <string>
-#include <cstring>
 #include <mutex>
 #include <cmath>
 #include <thread>
+#include <mutex>
 #include <epos_functions/epos_functions.h>
 
+#include <ros/callback_queue.h>
+#include <chrono_register/chrono_register.h>
 
 //----------------------------------------------------
 //    Defines
 //----------------------------------------------------
 
-#define LOOP_RATE 1000 //Rate at which the node checks for callbacks
+#define LOOP_RATE 100 //Rate at which the node checks for callbacks
 #define LEG_NUMBER 6 //Number of legs of the robot
 #define CONTROL_RATE 100 //Rate which the node sends the control of each leg
 #define PI 3.14159265359
@@ -48,7 +48,7 @@
 //    Class definitions
 //----------------------------------------------------
 
-/*class CommandMsgManager{
+class CommandMsgManager{
 
 	clhero_gait_controller::LegCommand current_command;
 	clhero_gait_controller::LegCommand fixed_command;
@@ -68,7 +68,7 @@ public:
 
 	void commandAllMotors();
 
-};*/
+};
 
 //----------------------------------------------------
 //    Global variables
@@ -84,14 +84,20 @@ std::vector<ros::Publisher> controller_command_pub;
 epos_functions* epos_f;
 
 //Command msg manager
-//CommandMsgManager* com_man;
+CommandMsgManager* com_man;
+
+//Register manager 
+ChronoRegister *reg;
+
+//Mutex for epos library usage
+std::mutex epos_mutex;
 
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
 
 //Function that maps the motors
-/*int mapMotor (int motor){
+int mapMotor (int motor){
 	switch (motor){
 		case 1:
 			return 6;
@@ -108,15 +114,15 @@ epos_functions* epos_f;
 		default:
 			return 0;
 	}
-}*/
+}
 
 //Function that turns rad/s into rpm
-/*inline double rads2rpm (double rads){
+inline double rads2rpm (double rads){
 	return rads*60/(2*PI);
-}*/
+}
 
 //Function that checks if one leg has its turning direction with the opposite sign
-/*inline bool checkNegativeMotor (int motor){
+inline bool checkNegativeMotor (int motor){
 	switch (motor){
 		case 1:
 			return true;
@@ -128,15 +134,18 @@ epos_functions* epos_f;
 			return false;
 	}
 	return false;
-}*/
+}
 
 //Function that turns a relative position command [0, 2pi) into an absolute position based
 //on the accumulate position of the motor
-/*double turnAbsolutePosition (double pos_command, double vel_command, double curr_position){
+double turnAbsolutePosition (double pos_command, double vel_command, double curr_position){
 	
+	Stopwatch watch;
+
 	long n = 0;
 	double fixed_command;
 
+	watch.start();
 	//Gets the number of turns
 	n = trunc(curr_position/(2*PI));
 
@@ -144,69 +153,50 @@ epos_functions* epos_f;
 	if(vel_command > 0){
 		fixed_command = 2*PI*n + pos_command;		
 		//If the final position is lower than the current position on forward movement
-		if((fixed_command < curr_position) && (fabs(fixed_command - curr_position) > POS_COMMAND_THR)){
+		//if((fixed_command < curr_position) && (fabs(fixed_command - curr_position) > POS_COMMAND_THR)){
+		if(fixed_command < curr_position){
 			fixed_command += 2*PI;
 		}
 	}else{
-		fixed_command = 2*PI*n - (2*PI - pos_command);		
+		fixed_command = 2*PI*n - (2*PI - pos_command);
 		//If the final position is greater than the current position on backward movement
-		if((fixed_command > curr_position) && (fabs(fixed_command - curr_position) > POS_COMMAND_THR)){
+		//if((fixed_command > curr_position) && (fabs(fixed_command - curr_position) > POS_COMMAND_THR)){
+		if(fixed_command > curr_position){
 			fixed_command -= 2*PI;
 		}
 	}
+	watch.stop();
+	reg->write("turnAbsolutePosition", watch.get_interval());
 
 	return fixed_command;
-}*/
-/*
+}
+
 //Function that turns the readings of position into a range of [0, 360]
 double fixAngle (double angle){
   return (angle - 2*PI*trunc(angle/(2*PI)));
-}*/
+}
 
 //Callback for leg command msgs
 void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg){
 
-	/*float current_pos = msg->pos[0];
-	float current_vel = msg->vel[0];
-	float current_acel = msg->acel[0];
-	float current_decel = msg->decel[0];
-	bool current_new_acel_profile = msg->new_acel_profile[0].data;
-	bool current_position_command = msg->position_command[0].data;
+	Stopwatch watch;
 
-	ROS_INFO("pata 1 : pos = %.2f -- vel = %.2f -- acel = %.2f -- decel = %.2f", current_pos, current_vel, current_acel, current_decel);
-	
-	epos_f->SetPositionProfile(1, current_vel, current_acel, current_decel);
-	epos_f->MoveToPosition(1, current_pos, true, true);*/
+	epos_mutex.lock();
 
-	//com_man->evaluateNewCommand(msg);
-	//com_man->commandAllMotors();
+	watch.start();
+	com_man->evaluateNewCommand(msg);
+	com_man->commandAllMotors();
+	watch.stop();
+
+	epos_mutex.unlock();
+
+	reg->write("legCommandCallback", watch.get_interval());
 
  	return;
 }
 
-void patternCommandCallback (const clhero_gait_controller::PatternCommand::ConstPtr& msg){
-	std::string gait_mode = msg->pattern_name;
-
-	static std::string gait_actual = "";
-	static std::string gait_old = "";
-
-	//Comparo el modo de marcha seleccionado
-	//Si es igual, significa que estoy el mismo modo. No hago nada
-	if(gait_actual.compare(gait_mode) == 0)
-	{
-		ROS_INFO("Mismo modo");
-
-	} else {
-		ROS_INFO("Nuevo modo");
-		gait_actual = gait_actual + gait_mode;
-		ROS_INFO_STREAM(gait_actual);
-	}
-
-
-}
-
 //Thread that periodically updates the state of the legs
-/*void StateUpdateThread (){
+void StateUpdateThread (){
 
 	//Leg State msg
 	clhero_gait_controller::LegState leg_state_msg;
@@ -223,8 +213,10 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 		//For each leg
 		for(int i = 0; i < LEG_NUMBER; i++){
 			
+			//epos_mutex.lock();
 			position = epos_f->GetPosition(mapMotor(i+1));
 			velocity = epos_f->GetVelocity(mapMotor(i+1));
+			//epos_mutex.unlock();
 			n = trunc(position/(2*PI));
 			position -= 2*PI*n;
 			
@@ -254,7 +246,45 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 	}
 
 	return;
-}*/
+}
+
+void StateUpdateMethod (){
+
+	//Leg State msg
+	clhero_gait_controller::LegState leg_state_msg;
+
+	double position, velocity;
+	int n = 0;
+
+	//For each leg
+	for(int i = 0; i < LEG_NUMBER; i++){
+		
+		epos_mutex.lock();
+		position = epos_f->GetPosition(mapMotor(i+1));
+		velocity = epos_f->GetVelocity(mapMotor(i+1));
+		epos_mutex.unlock();
+		n = trunc(position/(2*PI));
+		position -= 2*PI*n;
+		
+		if (position < 0){
+			position += 2*PI;
+		}
+
+		if(checkNegativeMotor(mapMotor(i+1))){
+			position = 2*PI - position;
+			velocity = (-1.0)*velocity;
+		}
+		
+		leg_state_msg.pos.push_back(position);
+		leg_state_msg.vel.push_back(velocity);
+		leg_state_msg.torq.push_back(0);
+	}
+
+	//Publishes the msg
+	legs_state_pub.publish(leg_state_msg);
+
+	return;
+}
 
 //----------------------------------------------------
 //    Class definitions
@@ -262,7 +292,8 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 
 
 //Function that checks if one leg has its turning direction with the opposite sign
-/*bool CommandMsgManager::checkNegativeMotor (int motor){
+bool CommandMsgManager::checkNegativeMotor (int motor){
+
 	switch (motor){
 		case 1:
 			return true;
@@ -274,9 +305,13 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 			return false;
 	}
 	return false;
-}*/
+}
 
-/*void CommandMsgManager::fixNewCommand (){
+void CommandMsgManager::fixNewCommand (){
+
+	Stopwatch watch, activate_profile_watch, set_profile_watch;
+
+	watch.start();
 	//For each leg
 	for(int i=0; i<LEG_NUMBER; i++){
 		//If there is a new command to be treated
@@ -297,7 +332,12 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 				double abs_position;
 
 				//Activates the position mode
+				//epos_mutex.lock();
+				activate_profile_watch.start();
 				this->epos->ActivateProfilePosition(mapMotor(i+1));
+				activate_profile_watch.stop();
+				//epos_mutex.unlock();
+				reg->write("epos::ActivateProfilePosition", activate_profile_watch.get_interval());
 				//Corrects the command if the motor is negative-turn
 				if(this->checkNegativeMotor(mapMotor(i+1))){
 					fixed_command.pos[i] = 2*PI - fixed_command.pos[i];
@@ -306,7 +346,12 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 				//Checks if a new profile shall be set
 				if(current_command.new_acel_profile[i].data){
 					//If so, uploads the acceleration and decceleration
+					//epos_mutex.lock();
+					set_profile_watch.start();
 					epos->SetPositionProfile(mapMotor(i+1), fabs(fixed_command.vel[i]), fixed_command.acel[i], fixed_command.decel[i]);
+					set_profile_watch.stop();
+					//epos_mutex.unlock();
+					reg->write("epos::SetPositionProfile", set_profile_watch.get_interval());
 				}
 
 				//Gets the absolute position based on the position command, velocity and current position
@@ -317,7 +362,12 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 				//Velocity command
 
 				//Activates the velocity profile
+				//epos_mutex.lock();
+				activate_profile_watch.start();
 				this->epos->ActivateProfileVelocity(mapMotor(i+1));
+				activate_profile_watch.stop();
+				//epos_mutex.unlock();
+				reg->write("ActivateProfileVelocity", activate_profile_watch.get_interval());
 				//Corrects the command if the motor is negative-turn
 				if(this->checkNegativeMotor(mapMotor(i+1))){
 					fixed_command.pos[i] = 2*PI - fixed_command.pos[i];
@@ -326,16 +376,26 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 				//Checks if a new profile shall be set
 				if(current_command.new_acel_profile[i].data){
 					//If so, uploads the acceleration and decceleration
+					//epos_mutex.lock();
+					set_profile_watch.start();
 					this->epos->SetVelocityProfile(mapMotor(i+1), fixed_command.acel[i], fixed_command.decel[i]);
+					set_profile_watch.stop();
+					//epos_mutex.unlock();
+					reg->write("SetVelocityProfile", set_profile_watch.get_interval());
 				}
 				//Once the position has been set sends the order
 				//epos->MoveWithVelocity(mapMotor(i+1), current_command.vel[i]);
 			}
 		}
 	}
-}*/
+	watch.stop();
 
-/*CommandMsgManager::CommandMsgManager(epos_functions* e){
+	reg->write("CommandMsgManager::fixNewCommand", watch.get_interval());
+
+	return;
+}
+
+CommandMsgManager::CommandMsgManager(epos_functions* e){
 	
 	this->epos = e;
 
@@ -354,10 +414,13 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 		fixed_command.position_command[i].data = false;
 	}
 
-}*/
+}
 
-/*void CommandMsgManager::evaluateNewCommand(const clhero_gait_controller::LegCommand::ConstPtr& msg){
+void CommandMsgManager::evaluateNewCommand(const clhero_gait_controller::LegCommand::ConstPtr& msg){
 	
+	Stopwatch watch;
+
+	watch.start();
 	for(int i=0; i<LEG_NUMBER; i++){
 
 		if(fabs(current_command.pos[i] - msg->pos[i]) > ERROR_THR){
@@ -400,31 +463,50 @@ void patternCommandCallback (const clhero_gait_controller::PatternCommand::Const
 			current_command.acel[i] = msg->acel[i];
 			current_command.decel[i] = msg->decel[i];
 			current_command.new_acel_profile[i].data = msg->new_acel_profile[i].data;
-			current_command.position_command[i].data = msg->position_command[i].data;
-			
-			ROS_INFO("pata %d : pos = %.2f -- vel = %.2f -- acel = %.2f -- decel = %.2f", i, current_command.pos[i], current_command.vel[i], current_command.acel[i], current_command.decel[i]);
+			current_command.position_command[i].data = msg->position_command[i].data;			
 		}
 	}
+	watch.stop();
+
+	reg->write("CommandMsgManager::evaluateNewCommand", watch.get_interval());
 
 	this->fixNewCommand();
 	return;
-}*/
+}
 
-/*void CommandMsgManager::commandAllMotors(){
+void CommandMsgManager::commandAllMotors(){
+
+	Stopwatch watch, move_to_pos_watch, move_w_vel_watch;
+
+	watch.start();
 	for(int i=0; i<LEG_NUMBER; i++){
 		if(is_new_command[i]){
 			if(fixed_command.position_command[i].data){
 				//Position command
+				//epos_mutex.lock();
+				move_to_pos_watch.start();
 				this->epos->MoveToPosition(mapMotor(i+1), fixed_command.pos[i], true, true);
+				move_to_pos_watch.stop();
+				//epos_mutex.unlock();
+				reg->write("epos::MoveToPosition", move_to_pos_watch.get_interval());
 			}else{
 				//Velocity command
+				//epos_mutex.lock();
+				move_w_vel_watch.start();
 				this->epos->MoveWithVelocity(mapMotor(i+1), fixed_command.vel[i]);
+				move_w_vel_watch.stop();
+				//epos_mutex.unlock();
+				reg->write("epos::MoveWithVelocity", move_w_vel_watch.get_interval());
 			}
 		}
 		is_new_command[i] = false;
 	}
+	watch.stop();
+
+	reg->write("CommandMsgManager::commandAllMotors", watch.get_interval());
+
 	return;
-}*/
+}
 
 //----------------------------------------------------
 //    Main function
@@ -436,45 +518,66 @@ int main(int argc, char **argv){
   //    ROS starting statements
   //----------------------------------------------------
 
-  ros::init(argc, argv, "clhero_hardware_interface");
+  ros::init(argc, argv, "clhero_simulation_interface");
   ros::NodeHandle nh;
 
   ros::Rate loop_rate (LOOP_RATE);
+
+  //ros::CallbackQueue queue;
+  //ros::AsyncSpinner spinner (0);
+  //ros::AsyncSpinner spinner (0, &queue);
+  //nh.setCallbackQueue(&queue);
+
+  //Register initialization
+  reg = new ChronoRegister;
+  reg->set_path("/home/hexapodo/chrono_register_results");
 
   //Creates the maxon motors'handler
   epos_f = new epos_functions();
 
   //Sets the default profile
-  /*for(int i = 0; i < LEG_NUMBER; i++){
+  epos_mutex.lock();
+  for(int i = 0; i < LEG_NUMBER; i++){
   	epos_f->ActivateProfilePosition(mapMotor(i+1));
   	epos_f->SetPositionProfile(mapMotor(i+1), DEFAULT_VEL, DEFAULT_ACCEL, DEFAULT_DECEL);
-  	//epos_f->SetVelocityProfile(mapMotor(i+1), DEFAULT_ACCEL, DEFAULT_DECEL);
-  }*/
-  epos_f->ActivateProfilePosition(1);
-  epos_f->SetPositionProfile(1, DEFAULT_VEL, DEFAULT_ACCEL, DEFAULT_DECEL);
+  	epos_f->SetVelocityProfile(mapMotor(i+1), DEFAULT_ACCEL, DEFAULT_DECEL);
+  }
+  epos_mutex.unlock();
 
   //Creates the msg manager
-  //com_man = new CommandMsgManager(epos_f);
+  com_man = new CommandMsgManager(epos_f);
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 1);
   
   //Topics subscription
-  ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 1, legCommandCallback);
-  ros::Subscriber pattern_command_sub = nh.subscribe("pattern_command", 1, patternCommandCallback);
-
+  ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 100, legCommandCallback);
   //ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
   
+  //Start spinner
+  //spinner.start();
+
   //threads which helds the status publishing function
   //std::thread state_update_thr (StateUpdateThread);
 
   //----------------------------------------------------
   //    Core loop of the node
   //----------------------------------------------------
+  
+  //ros::waitForShutdown();
+
   while(ros::ok()){
   	ros::spinOnce();
-  	loop_rate.sleep();	
+  	StateUpdateMethod();
+  	loop_rate.sleep();
   }
+
+  epos_f->closeAllDevices();
+
+  /*while(ros::ok()){
+  	ros::spinOnce();
+  	loop_rate.sleep();	
+  }*/
 
   //----------------------------------------------------
   //    End of node statements
@@ -482,8 +585,8 @@ int main(int argc, char **argv){
 
   //state_update_thr.join();
 
-  //delete epos_f;
-  //delete com_man;
+  delete epos_f;
+  delete com_man;
 
   return 0;
 

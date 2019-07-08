@@ -46,6 +46,8 @@ public:
 
     int GetEffort(int);
 
+    void closeAllDevices();
+
     //void epos_functions::move_motor_to_position(void, unsigned short, long, unsigned int, unsigned int, unsigned int, unsigned int, bool, bool )
     //void move_motor_to_position(void*, unsigned short, long, unsigned int, unsigned int, unsigned int, unsigned int, bool, bool);
 

@@ -405,3 +405,12 @@ int epos_functions::GetEffort(int motor){
     */
     return velocity_actual;
 }
+
+
+void epos_functions::closeAllDevices(){
+    
+    unsigned int error_code;
+    VCS_CloseAllDevices(&error_code);
+
+    return;
+}
