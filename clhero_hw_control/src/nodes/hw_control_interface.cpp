@@ -139,36 +139,43 @@ inline bool checkNegativeMotor (int motor){
 //Function that turns a relative position command [0, 2pi) into an absolute position based
 //on the accumulate position of the motor
 double turnAbsolutePosition (double pos_command, double vel_command, double curr_position){
-	
+
 	Stopwatch watch;
 
 	long n = 0;
-	double fixed_command;
+	double fixed_command, diff, rel_curr_pos;
 
 	watch.start();
 	//Gets the number of turns
-	n = trunc(curr_position/(2*PI));
+	n = floor(curr_position/(2*PI));
+
+	//Calcs the relative current position of the leg, its position between [0,360]
+	rel_curr_pos = curr_position - 2*PI*n;
 
 	//Depending on the movement's direction, the final position shall be corrected 
 	if(vel_command > 0){
-		fixed_command = 2*PI*n + pos_command;		
-		//If the final position is lower than the current position on forward movement
-		//if((fixed_command < curr_position) && (fabs(fixed_command - curr_position) > POS_COMMAND_THR)){
-		if(fixed_command < curr_position){
-			fixed_command += 2*PI;
+
+		diff = pos_command - rel_curr_pos;
+		if (diff < 0){
+			diff += 2*PI;
 		}
+		fixed_command = curr_position + diff;
+
 	}else{
-		fixed_command = 2*PI*n - (2*PI - pos_command);
-		//If the final position is greater than the current position on backward movement
-		//if((fixed_command > curr_position) && (fabs(fixed_command - curr_position) > POS_COMMAND_THR)){
-		if(fixed_command > curr_position){
-			fixed_command -= 2*PI;
+
+		diff = rel_curr_pos - pos_command;
+		if (diff < 0){
+			diff += 2*PI;
 		}
+		fixed_command = curr_position - diff;
+
 	}
+	
 	watch.stop();
 	reg->write("turnAbsolutePosition", watch.get_interval());
 
 	return fixed_command;
+
 }
 
 //Function that turns the readings of position into a range of [0, 360]

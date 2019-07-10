@@ -13,7 +13,7 @@
 #include <ros/ros.h>
 #include <clhero_gait_controller/clhero.h>
 #include <string>
-#include <iostream>
+#include <vector>
 
 //----------------------------------------------------
 //    Defines
@@ -21,22 +21,34 @@
 
 //Declare the defines needed in the gait pattern
 
-#define STATE_LOOP_RATE 1.0/10
+#define STATE_LOOP_RATE 200
 #define PATTERN_NAME "stand_up"
-#define PI 3.1416
+#define PI 3.14159265359
+#define GROUND_ANGLE (1.5707963267948966) // 60 [º]
+#define AIR_ANGLE (2*PI-GROUND_ANGLE)
+#define GROUND_VELOCITY 3 // aprox 30 [rpm]
+#define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
+#define LEG_NUMBER 6
+#define ANG_THR 0.12217304763960307
+#define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
+#define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
+
+//----------------------------------------------------
+//    Global Variables
+//----------------------------------------------------
+
 
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
 
-//Declare the functions needed in the gait pattern
 
 //----------------------------------------------------
 //    States
 //----------------------------------------------------
 
-//Estado 1
-
+//State 1
+//Raise the robot into a standing position
 void state_1 (clhero::Clhero_robot* clhr){
 
 	//------------------------------------------------
@@ -49,12 +61,9 @@ void state_1 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
-	//As for example
-	for(int i=0; i<6; i++){
-		clhr->setLegPosition(i+1, 0, -3);
+	for(int i=1; i <= LEG_NUMBER; i++){
+		clhr->setLegPosition(i, 0);
 	}
-
-	ROS_INFO("[position_control_test]: Entered state 1");
 
 	//------------------------------------------------
 	// State's core loop
@@ -72,136 +81,6 @@ void state_1 (clhero::Clhero_robot* clhr){
 		//	clhr->transition(new_state_id);
 
 		loop_rate.sleep();
-
-		clhr->transition(2);
-	}
-
-	return;
-}
-
-void state_2 (clhero::Clhero_robot* clhr){
-
-	//------------------------------------------------
-	// State's loop rate
-	//------------------------------------------------
-
-	ros::Rate loop_rate(STATE_LOOP_RATE);
-
-	//------------------------------------------------
-	// State's initial statement
-	//------------------------------------------------
-
-	//As for example
-	for(int i=0; i<6; i++){
-		clhr->setLegPosition(i+1, 270*2*PI/(360), -3);
-	}
-
-	ROS_INFO("[position_control_test]: Entered state 2");
-
-	//------------------------------------------------
-	// State's core loop
-	//------------------------------------------------
-
-	while(clhr->activeState() == 2){
-
-		//--------------------------------------------
-		// State's transition checking
-		//--------------------------------------------
-
-		//Here the state shall check for transitions
-		//in case the conditions for a transition are
-		//met, this shall be done by:
-		//	clhr->transition(new_state_id);
-
-		loop_rate.sleep();
-
-		clhr->transition(3);
-	}
-
-	return;
-}
-
-//Estado 2
-void state_3 (clhero::Clhero_robot* clhr){
-
-	//------------------------------------------------
-	// State's loop rate
-	//------------------------------------------------
-
-	ros::Rate loop_rate(STATE_LOOP_RATE);
-
-	//------------------------------------------------
-	// State's initial statement
-	//------------------------------------------------
-
-	//As for example
-	for(int i=0; i<6; i++){
-		clhr->setLegPosition(i+1, 180*2*PI/(360), -3);
-	}
-
-	ROS_INFO("[position_control_test]: Entered state 3");
-
-	//------------------------------------------------
-	// State's core loop
-	//------------------------------------------------
-
-	while(clhr->activeState() == 3){
-
-		//--------------------------------------------
-		// State's transition checking
-		//--------------------------------------------
-
-		//Here the state shall check for transitions
-		//in case the conditions for a transition are
-		//met, this shall be done by:
-		//	clhr->transition(new_state_id);
-
-		loop_rate.sleep();
-
-		clhr->transition(4);
-	}
-
-	return;
-}
-
-//Estado 1
-void state_4 (clhero::Clhero_robot* clhr){
-
-	//------------------------------------------------
-	// State's loop rate
-	//------------------------------------------------
-
-	ros::Rate loop_rate(STATE_LOOP_RATE);
-
-	//------------------------------------------------
-	// State's initial statement
-	//------------------------------------------------
-
-	//As for example
-	for(int i=0; i<6; i++){
-		clhr->setLegPosition(i+1, 90*2*PI/(360), -3);
-	}
-
-	ROS_INFO("[position_control_test]: Entered state 4");
-
-	//------------------------------------------------
-	// State's core loop
-	//------------------------------------------------
-
-	while(clhr->activeState() == 4){
-
-		//--------------------------------------------
-		// State's transition checking
-		//--------------------------------------------
-
-		//Here the state shall check for transitions
-		//in case the conditions for a transition are
-		//met, this shall be done by:
-		//	clhr->transition(new_state_id);
-
-		loop_rate.sleep();
-
-		clhr->transition(1);
 	}
 
 	return;
@@ -233,25 +112,19 @@ int main (int argc, char** argv){
 	//Register the new gait pattern
 	clhero::registerGaitPattern(pattern_name);
 
-	while(1)
-	{}
-
 	//----------------------------------------------------
 	//    State's instantiation
 	//----------------------------------------------------
 
 	//attach the states set
-	/*clhr.attachState(1, state_1, STARTING_STATE);
-	clhr.attachState(2, state_2);
-	clhr.attachState(3, state_3);
-	clhr.attachState(4, state_4);
+	clhr.attachState(1, state_1, STARTING_STATE);
 
 	//----------------------------------------------------
 	//    Run
 	//----------------------------------------------------
 
 	//Lets the gait pattern run
-	clhr.run();*/
+	clhr.run();
 
 	return 0;
 

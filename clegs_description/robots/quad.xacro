@@ -1,0 +1,47 @@
+<?xml version="1.0" ?>
+<robot name="clhero_v2" xmlns:xacro="http://ros.org/wiki/xacro">
+
+<!--=====================================================================-->
+<!--        Definicion del robot hexapodo                                    -->
+<!--=====================================================================-->
+
+<!-- Archivos para incluir en el robot -->
+
+<xacro:include filename="$(find hexapodo_description)/urdf/clegs_leg_80.xacro"/>
+<xacro:include filename="$(find hexapodo_description)/urdf/quad_base.xacro"/>
+<xacro:include filename="$(find hexapodo_description)/urdf/sensores/d435.urdf.xacro"/>
+
+<!-- Declaracion del plugin gazebo_ros_control -->
+
+<gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+        <robotNamespace>/clhero_v2</robotNamespace>
+    </plugin>
+</gazebo>
+
+
+<!-- Instanciacion de las patas dentro de la descripcion del robot -->
+
+<motor name="motor_1" parent_link="base_link" right="0">
+    <origin xyz="$${-117.5/1000} ${233/1000} ${0/1000}" rpy="0 0 0"/>
+</motor>
+
+<motor name="motor_2" parent_link="base_link" right="1">
+    <origin xyz="$${-117.5/1000} ${-233/1000} ${0/1000}" rpy="0 0 0"/>
+</motor>
+
+<motor name="motor_3" parent_link="base_link" right="0">
+    <origin xyz="${117.5/1000} ${233/1000} ${0/1000}" rpy="0 0 0"/>
+</motor>
+
+<motor name="motor_4" parent_link="base_link" right="1">
+    <origin xyz="${117.5/1000} ${-233/1000} ${0/1000}" rpy="0 0 0"/>
+</motor>
+
+
+<!-- Sensors -->
+<sensor_d435 parent="base_link">
+    <origin xyz="0.190 0 -0.01" rpy="0 0 0"/>
+</sensor_d435>
+
+</robot>
