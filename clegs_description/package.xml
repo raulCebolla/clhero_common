@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>clegs_description</name>
+  <version>1.0.0</version>
+  <description>
+	The clegs_description package. 
+	The urdf, meshes, and other elements needed in the description are contained 
+	here. This package includes the description of the CLHero V2 and 2 prototypes 
+	of c-legged robots, one with 4 legs (quad) and the other one with 8 legs 
+	(octo). The package includes also some launch files to publish the robot 
+	state and to test the urdf files in rviz.
+  </description>
+
+  <author email="jorge.deleon@upm.es">Jorge De León Rivas</author>
+  <author email="raul.cebolla.arroyo@alumnos.upm.es">Raúl Cebolla Arroyo</author>
+  <maintainer email="jorge.deleon@upm.es">Jorge De León Rivas</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>robot_state_publisher</build_depend>
+  <build_depend>roslaunch</build_depend>
+  <build_depend>urdf</build_depend>
+  <build_depend>xacro</build_depend>
+
+  <build_export_depend>robot_state_publisher</build_export_depend>
+  <build_export_depend>roslaunch</build_export_depend>
+  <build_export_depend>urdf</build_export_depend>
+  <build_export_depend>xacro</build_export_depend>
+
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>urdf</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+</package>

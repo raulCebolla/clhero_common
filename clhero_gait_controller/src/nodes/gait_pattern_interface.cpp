@@ -17,6 +17,7 @@
 #include <clhero_gait_controller/RegisterGaitPattern.h>
 #include <vector>
 #include <string>
+#include <iostream>
 
 //----------------------------------------------------
 //    Defines
@@ -130,9 +131,26 @@ bool gaitPatternControlCallback (clhero_gait_controller::GaitPatternControl::Req
         return true;
       }
 
+      //If a gait pattern is already running, this node shall send the command to stop 
+      //before the new pattern is started. To do that, first checks the parameter
+      if(current_pattern.compare("None")){
+      	//If there is an active gait pattern
+
+      	//Builds the stop order for the current pattern
+      	msg.pattern_name = current_pattern;
+      	msg.order = "stop";
+
+      	std::cout << "[gait pattern interface] Stopping current gait pattern: " << current_pattern << std::endl;
+
+      	//Calls the srv
+      	pattern_command_pub.publish(msg);
+      }
+
       //Sets the name as current
       current_pattern = req.pattern_name;
       nh.setParam(CURRENT_GP_PARAM_NAMESPACE, current_pattern);
+
+      std::cout << "[gait pattern interface] Starting gait pattern: " << current_pattern << std::endl;
       
       //if the name is in the list, bulids the msg
       msg = buildPatternCommandMsg(req);
@@ -158,6 +176,8 @@ bool gaitPatternControlCallback (clhero_gait_controller::GaitPatternControl::Req
     //Checks if the name matches the current gait pattern
     if(!current_pattern.compare(req.pattern_name)){
 
+      std::cout << "[gait pattern interface] Pausing current gait pattern: " << current_pattern << std::endl;
+
       //If matches, builds the msg
       msg = buildPatternCommandMsg(req);
       //and publishes it
@@ -181,6 +201,8 @@ bool gaitPatternControlCallback (clhero_gait_controller::GaitPatternControl::Req
     
     //Checks if the name matches the current gait pattern
     if(!current_pattern.compare(req.pattern_name)){
+
+      std::cout << "[gait pattern interface] Resuming current gait pattern: " << current_pattern << std::endl;
 
       //If matches, builds the msg
       msg = buildPatternCommandMsg(req);
@@ -206,6 +228,8 @@ bool gaitPatternControlCallback (clhero_gait_controller::GaitPatternControl::Req
     //Checks if the name matches the current gait pattern
     if(!current_pattern.compare(req.pattern_name)){
 
+      std::cout << "[gait pattern interface] Forcing gait pattern: " << current_pattern << " into state: " << std::to_string(req.args[0]) << std::endl;
+
       //If matches, builds the msg
       msg = buildPatternCommandMsg(req);
       //and publishes it
@@ -229,6 +253,8 @@ bool gaitPatternControlCallback (clhero_gait_controller::GaitPatternControl::Req
     
     //Checks if the name matches the current gait pattern
     if(!current_pattern.compare(req.pattern_name)){
+
+      std::cout << "[gait pattern interface] Stopping current gait pattern: " << current_pattern << std::endl;
 
       //If matches, builds the msg
       msg = buildPatternCommandMsg(req);

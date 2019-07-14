@@ -2,19 +2,23 @@
 
 	<!--Arguments to pass the launch file-->
 	<arg name="patterns" default="true"/>
-	<arg name="gazebo_sim" default="true"/>
+	<arg name="gazebo_sim" default="false"/>
+	<arg name="hardware" default="true"/>
 
+	<!-- Parametros del YAML -->
+	<!--rosparam file="$(find clhero_hw_control)/config/clhero_params.yaml" /-->
 
 	<group ns="clhero_gait_control">
 		
 		<group>
-			<node name="command_interface" pkg="clhero_gait_controller" type="clhero_command_interface"/>
-			<node name="gait_pattern_interface" pkg="clhero_gait_controller" type="clhero_gait_pattern_interface"/>
+			<node name="command_interface" pkg="clhero_gait_controller" type="clhero_command_interface" output="screen"/>
+			<node name="gait_pattern_interface" pkg="clhero_gait_controller" type="clhero_gait_pattern_interface" output="screen"/>
 		</group>
 
 		<group>
 			<!--The simulation interface shall only be launched when the gazebo simulation is planned to run-->
-			<node name="sim_control_interface" pkg="clhero_sim_control" type="clhero_sim_control_interface" if="$(arg gazebo_sim)"/>
+			<node name="sim_control_interface" pkg="clhero_sim_control" type="clhero_sim_control_interface" if="$(arg gazebo_sim)" output="screen"/>
+			<node name="hw_control_interface" pkg="clhero_hw_control" type="clhero_hw_control_interface" if="$(arg hardware)" output="screen"/>
 		</group>
 
 		<group>
@@ -22,5 +26,12 @@
 			<include file="$(find clhero_gait_patterns_definition)/launch/patterns.launch" if="$(arg patterns)"/>
 		</group>
 	</group>
+
+	<!--node name="clhero_teleop" pkg="clhero_teleop" type="clhero_teleop_node" if="$(arg hardware)" output="screen"/-->
+	<!--node name="joy" pkg="joy" type="joy_node" if="$(arg hardware)" output="screen"/-->
+	
+	<include file="$(find clegs_description)/launch/clegs_state_robot.launch"/>
+	
+
 
 </launch>

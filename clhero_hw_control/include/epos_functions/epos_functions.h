@@ -4,6 +4,12 @@
 #include <std_msgs/String.h>
 #include <ros/ros.h>
 #include <epos_library/Definitions.h>
+#include <cmath>
+
+//Unidades de maxon:
+//  Posición    [grados]
+//  Velocidad   [rpm]
+//  Aceleración [rpm/s]
 
 class epos_functions
 {
@@ -14,6 +20,7 @@ private:
 
 public:
     epos_functions();
+    ~epos_functions();
     void SetDefaultParameters(int ); //Creo que esta no hace falta para nada
 
     // Abrir Epos
@@ -26,18 +33,20 @@ public:
     void LogInfo(std::string message);
 
     int ActivateProfilePosition(int motor);
-    int SetPositionProfile(int motor, int velocity, int acceleration, int deceleration);
-    int MoveToPosition(int motor, int position, bool absolute, bool inmediately);
-    int GetPosition(int motor);
+    int SetPositionProfile(int motor, double velocity, double acceleration, double deceleration);
+    int MoveToPosition(int motor, double position, bool absolute, bool inmediately);
+    double GetPosition(int motor);
     bool HaltPositionMovement(int motor);
 
     int ActivateProfileVelocity(int motor);
-    int SetVelocityProfile(int motor, int acceleration, int deceleration);
-    int MoveWithVelocity(int motor, int velocity);
-    int GetVelocity(int motor);
+    int SetVelocityProfile(int motor, double acceleration, double deceleration);
+    int MoveWithVelocity(int motor, double velocity);
+    double GetVelocity(int motor);
     bool HaltVelocityMovement(int motor);
 
     int GetEffort(int);
+
+    void closeAllDevices();
 
     //void epos_functions::move_motor_to_position(void, unsigned short, long, unsigned int, unsigned int, unsigned int, unsigned int, bool, bool )
     //void move_motor_to_position(void*, unsigned short, long, unsigned int, unsigned int, unsigned int, unsigned int, bool, bool);

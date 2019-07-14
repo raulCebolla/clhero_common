@@ -1,9 +1,13 @@
 <launch>
-	<node name="complete_wave" pkg="clhero_gait_patterns_definition" type="complete_wave"/>
-	<node name="test_pattern" pkg="clhero_gait_patterns_definition" type="test_pattern"/>
-	<node name="test_position_control" pkg="clhero_gait_patterns_definition" type="test_position_control"/>
-	<node name="test_reverse_position_control" pkg="clhero_gait_patterns_definition" type="test_reverse_position_control"/>
-	<node name="alternating_tripod" pkg="clhero_gait_patterns_definition" type="alternating_tripod"/>
-	<node name="alternating_tripod_turn_right" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_right"/>
-	<node name="alternating_tripod_turn_left" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_left"/>
+	<node name="complete_wave" pkg="clhero_gait_patterns_definition" type="complete_wave" output="screen"/>
+	<node name="test_pattern" pkg="clhero_gait_patterns_definition" type="test_pattern" output="screen"/>
+	<node name="test_position_control" pkg="clhero_gait_patterns_definition" type="test_position_control" output="screen"/>
+	<node name="test_reverse_position_control" pkg="clhero_gait_patterns_definition" type="test_reverse_position_control" output="screen"/>
+	<node name="alternating_tripod" pkg="clhero_gait_patterns_definition" type="alternating_tripod" output="screen"/>
+	<node name="alternating_tripod_turn_right" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_right" output="screen"/>
+	<node name="alternating_tripod_turn_left" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_left" output="screen"/>
+
+	<node name="stand_up" pkg="clhero_gait_patterns_definition" type="stand_up" output="screen"/>
+	<node name="get_down" pkg="clhero_gait_patterns_definition" type="get_down" output="screen"/>
+	<node name="stand_by" pkg="clhero_gait_patterns_definition" type="stand_by" output="screen"/>
 </launch>

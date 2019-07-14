@@ -7,6 +7,9 @@
 //	Changelog:
 //=====================================================================
 
+#ifndef CLHERO_H
+#define CLHERO_H
+
 //----------------------------------------------------
 //    Includes
 //----------------------------------------------------
@@ -19,13 +22,14 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <map>
 
 //----------------------------------------------------
 //    Defines
 //----------------------------------------------------
 
-#define DEFAULT_VEL 3.141592653589793 // pi [rad/s]
-#define DEFAULT_ACEL 1200
+#define DEFAULT_VEL (2*3.141592653589793) // pi [rad/s]
+#define DEFAULT_ACEL 1256.6370614359172
 #define DEFAULT_GP_NAME "None"
 #define STARTING_STATE true
 
@@ -76,7 +80,8 @@ class Clhero_robot {
 	std::string gp_name;
 
 	//Fields containing the arguments of the movement
-	std::vector<float> args; 
+	//std::vector<float> args; 
+	std::map<std::string, std::string> args;
 
 	//Thread that handles the pattern command msg reception
 	std::thread *pattern_command_reception_thread;
@@ -136,14 +141,14 @@ public:
 	void setLegPosition (int leg, 
 						float positions, 
 						float velocity = DEFAULT_VEL,
-						bool new_acel_profile = false,
+						bool new_acel_profile = true,
 						float acel = DEFAULT_ACEL,
 						float decel = DEFAULT_ACEL);
 
 	//Set the Velocity for a leg
 	void setLegVelocity (int leg,  
 						float velocity,
-						bool new_acel_profile = false,
+						bool new_acel_profile = true,
 						float acel = DEFAULT_ACEL,
 						float decel = DEFAULT_ACEL);
 
@@ -174,6 +179,9 @@ public:
 	std::vector<float> getLegsVelocity();
 	std::vector<float> getLegsTorque();
 
+	//Function that returns the arguments
+	std::map<std::string, std::string> getArgs();
+
 };
 
 //----------------------------------------------------
@@ -201,3 +209,6 @@ void handle_leg_state_reception (Clhero_robot* clhr);
 void handle_active_state(Clhero_robot* clhr);
 
 }
+
+
+#endif
