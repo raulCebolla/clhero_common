@@ -639,7 +639,7 @@ std::vector<float> Clhero_robot::getLegsVelocity(){
 	return ls;
 }
 
-std::vector<float> Clhero_robot::getLegsTorque(){
+std::vector<float> Clhero_robot::getLegsEffort(){
 	std::vector<float> ls;
 	leg_state_mutex.lock();
 	ls = this->leg_state.torq;

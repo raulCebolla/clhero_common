@@ -177,7 +177,7 @@ public:
 	LegState getLegState ();
 	std::vector<float> getLegsPosition();
 	std::vector<float> getLegsVelocity();
-	std::vector<float> getLegsTorque();
+	std::vector<float> getLegsEffort();
 
 	//Function that returns the arguments
 	std::map<std::string, std::string> getArgs();

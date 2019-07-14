@@ -141,8 +141,8 @@ add_executable(alternating_tripod src/alternating_tripod.cpp)
 add_executable(alternating_tripod_turn_right src/alternating_tripod_turn_right.cpp)
 add_executable(alternating_tripod_turn_left src/alternating_tripod_turn_left.cpp)
 add_executable(stand_up src/stand_up.cpp)
-add_executable(get_down src/get_down.cpp)
-add_executable(stand_by src/stand_by.cpp)
+add_executable(lay_down src/lay_down.cpp)
+add_executable(offset_setting src/offset.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -160,8 +160,8 @@ add_dependencies(alternating_tripod ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 add_dependencies(alternating_tripod_turn_right ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(alternating_tripod_turn_left ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(stand_up ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(get_down ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(stand_by ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(lay_down ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(offset_setting ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
@@ -176,5 +176,5 @@ target_link_libraries(alternating_tripod ${catkin_LIBRARIES})
 target_link_libraries(alternating_tripod_turn_right ${catkin_LIBRARIES})
 target_link_libraries(alternating_tripod_turn_left ${catkin_LIBRARIES})
 target_link_libraries(stand_up ${catkin_LIBRARIES})
-target_link_libraries(get_down ${catkin_LIBRARIES})
-target_link_libraries(stand_by ${catkin_LIBRARIES})
+target_link_libraries(lay_down ${catkin_LIBRARIES})
+target_link_libraries(offset_setting ${catkin_LIBRARIES})

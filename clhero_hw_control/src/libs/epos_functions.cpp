@@ -243,6 +243,7 @@ int epos_functions::MoveToPosition(int motor, double position, bool absolute, bo
     unsigned int error_code = 0;
     int result = 0;
     int position_encoder = position * (4000 * REDUCTION) / (UNITS_PER_REV);    // Posicion_deseada * (encoder * reductora) / grados_una_vuelta
+    position_encoder = position_encoder - this->offset[motor-1];
     if((result = VCS_MoveToPosition(keyHandle_local, motor, (int)rint(position_encoder), absolute, inmediately, &error_code)) == 0)
     {
         ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
@@ -267,9 +268,30 @@ double epos_functions::GetPosition(int motor)
         result = 0;
         return result;
     }
+
+    position_actual_raw += this->offset[motor-1];
     position_actual = (position_actual_raw * 2 * PI) / (4000.0 * 33.0); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
 
     return position_actual;
+}
+
+//Posicion en pulsos del encoder
+int epos_functions::GetRawPosition(int motor)
+{
+    void* keyHandle_local = keyHandle;
+    unsigned int error_code = 0;
+    int result = 0;
+    int position_actual_raw = 0;
+    
+    if((result = VCS_GetPositionIs(keyHandle_local, motor, &position_actual_raw, &error_code)) == 0)
+    {
+        ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
+        LogError("GetRawPosition", result, error_code);
+        result = 0;
+        return result;
+    }
+
+    return position_actual_raw;
 }
 
 /**** Función para detener el movimiento en posición del motor ****/
@@ -389,21 +411,21 @@ int epos_functions::GetEffort(int motor){
     void* keyHandle_local = keyHandle;
     unsigned int error_code = 0;
     int result = 0;
-    int velocity_actual_raw = 0;
-    int velocity_actual = 0;
+    short current_actual_raw = 0;
+    int effort_actual = 0;
     
-    /*
-    if((result = VCS_GetVelocityIs(keyHandle_local, motor, &velocity_actual_raw, &error_code)) == 0)
+    if((result = VCS_GetCurrentIs(keyHandle_local, motor, &current_actual_raw, &error_code)) == 0)
     {
         ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
+        LogError("GetEffort", result, error_code);
         result = 0;
         return result;
     }
     
+    effort_actual = current_actual_raw; 
     
-    velocity_actual = (veloctiy_actual_raw * 360) / (4000 * 33); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
-    */
-    return velocity_actual;
+    return effort_actual;
+
 }
 
 
@@ -411,6 +433,14 @@ void epos_functions::closeAllDevices(){
     
     unsigned int error_code;
     VCS_CloseAllDevices(&error_code);
+
+    return;
+}
+
+void epos_functions::setPositionOffset(int motor, double position){
+     
+    position = position / (2*PI) * REDUCTION * 4000;
+    this->offset[motor-1] = (int)rint(position - this->GetRawPosition(motor));
 
     return;
 }
