@@ -5,9 +5,12 @@
 #include <ros/ros.h>
 #include <epos_library/Definitions.h>
 #include <cmath>
+#include <vector>
+
+#define LEG_NUMBER 6
 
 //Unidades de maxon:
-//  Posición    [grados]
+//  Posición    [pulsos de encoder]
 //  Velocidad   [rpm]
 //  Aceleración [rpm/s]
 
@@ -16,12 +19,13 @@ class epos_functions
 
 private:
 
-
+    //Position offset of each of the legs
+    std::vector<int> offset = std::vector<int>(LEG_NUMBER, 0);
 
 public:
     epos_functions();
     ~epos_functions();
-    void SetDefaultParameters(int ); //Creo que esta no hace falta para nada
+    void SetDefaultParameters(int); //Creo que esta no hace falta para nada
 
     // Abrir Epos
     //int OpenDevice(unsigned int* , int , void* , std::string , std::string , std::string , std::string , int );
@@ -32,10 +36,13 @@ public:
     void LogError(std::string functionName, int p_lResult, unsigned int p_ulErrorCode);
     void LogInfo(std::string message);
 
+    int SetMaxFollowingError(int motor, unsigned int max_error);
+
     int ActivateProfilePosition(int motor);
     int SetPositionProfile(int motor, double velocity, double acceleration, double deceleration);
     int MoveToPosition(int motor, double position, bool absolute, bool inmediately);
     double GetPosition(int motor);
+    int GetRawPosition(int motor);
     bool HaltPositionMovement(int motor);
 
     int ActivateProfileVelocity(int motor);
@@ -47,6 +54,8 @@ public:
     int GetEffort(int);
 
     void closeAllDevices();
+
+    void setPositionOffset(int motor, double position);
 
     //void epos_functions::move_motor_to_position(void, unsigned short, long, unsigned int, unsigned int, unsigned int, unsigned int, bool, bool )
     //void move_motor_to_position(void*, unsigned short, long, unsigned int, unsigned int, unsigned int, unsigned int, bool, bool);

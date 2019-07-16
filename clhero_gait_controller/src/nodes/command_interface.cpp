@@ -28,7 +28,7 @@
 //    Defines
 //----------------------------------------------------
 
-#define COMMAND_MSG_RATE 10
+#define COMMAND_MSG_RATE 50
 #define LEG_STATE_MSG_RATE 100
 #define CURRENT_GP_PARAM_NAMESPACE "/clhero/gait_patterns/current"
 #define REGISTERED_GP_PARAM_NAMESPACE "/clhero/gait_patterns/registered"

@@ -367,6 +367,7 @@ void zero_state (Clhero_robot* hex){
 Clhero_robot::Clhero_robot(std::string pattern_name){
 	command_srv_client = nh.serviceClient<clhero_gait_controller::LegCommandRequest>("leg_command_request");
 	gp_name = pattern_name;
+	this->command_req.request.gait_pattern_name = gp_name;
 
 	//Only one instance of the class shall be active at any time
 	//as the thread that checks each receiving msg shall only be
@@ -398,6 +399,9 @@ Clhero_robot::Clhero_robot(std::string pattern_name){
 
 		//Launch the state handler thread
 		this->state_handler_thread = new std::thread(handle_active_state, this);
+
+		//Sets the commands as non buffered
+		this->bufferCommands(false);
 	}
 }
 
@@ -409,8 +413,6 @@ void Clhero_robot::setLegPosition (int leg,
 					float acel,
 					float decel){
 
-	clhero_gait_controller::LegCommandRequest msg;
-
 	//Checks if the pattern name is not the default.
 	if(gp_name=="None"){
 		ROS_INFO("No gait pattern name was set for node, command will not be sent.");
@@ -420,43 +422,80 @@ void Clhero_robot::setLegPosition (int leg,
 	//Builds the msg
 	for(int i=1; i<=LEG_NUMBER; i++){
 
-		msg.request.position_command[i-1].data = true;
-
 		if(i==leg){
-			msg.request.new_command[i-1] = 1;
-			msg.request.pos[leg-1] = position;
-			msg.request.vel[leg-1] = velocity;
+
+			this->is_new_command_req = true;
+
+			this->command_req.request.position_command[i-1].data = true;
+
+			this->command_req.request.new_command[i-1] = 1;
+			this->command_req.request.pos[leg-1] = position;
+			this->command_req.request.vel[leg-1] = velocity;
 
 			if(new_acel_profile){
-				msg.request.new_acel_profile[leg-1].data = true;
-				msg.request.acel[leg-1] = acel;
-				msg.request.decel[leg-1] = decel;
+				this->command_req.request.new_acel_profile[leg-1].data = true;
+				this->command_req.request.acel[leg-1] = acel;
+				this->command_req.request.decel[leg-1] = decel;
 			}else{
-				msg.request.new_acel_profile[leg-1].data = false;
-				msg.request.acel[leg-1] = 0;
-				msg.request.decel[leg-1] = 0;
+				this->command_req.request.new_acel_profile[leg-1].data = false;
+				this->command_req.request.acel[leg-1] = 0;
+				this->command_req.request.decel[leg-1] = 0;
 			}
 			
-		}else{
-			msg.request.new_command[i-1] = 0;
-			msg.request.pos[i-1] = 0;
-			msg.request.vel[i-1] = 0;
-			msg.request.new_acel_profile[i-1].data = false;
-			msg.request.acel[i-1] = 0;
-			msg.request.decel[i-1] = 0;
 		}
+
 	}
 
-	//Sets the gait pattern name on the msg
-	msg.request.gait_pattern_name = gp_name;
+	//If the commands are not being buffered, sends the msg
+	if(!are_commands_buffered){
+		//Sends the msg
+		this->sendCommands();
+	}
 
-	//Sends the msg
-	if(command_srv_client.call(msg)){
-		/*if(msg.response.ans){
-			ROS_ERROR("Invalid command - gait pattern may not be active.");
-		}*/
-	}else{
-		ROS_ERROR("Command service could not be called.");
+	return;
+}
+
+//Set the position for multiple legs
+void Clhero_robot::setLegPosition (std::vector<int> leg, 
+					float position, 
+					float velocity,
+					bool new_acel_profile,
+					float acel,
+					float decel){
+
+	//Checks if the pattern name is not the default.
+	if(gp_name=="None"){
+		ROS_INFO("No gait pattern name was set for node, command will not be sent.");
+		return;
+	}
+
+	//Builds the msg
+	for(int i=0; i<leg.size(); i++){
+
+		this->is_new_command_req = true;
+
+		this->command_req.request.new_command[leg[i]-1] = 1;
+
+		this->command_req.request.position_command[leg[i]-1].data = true;
+		this->command_req.request.pos[leg[i]-1] = position;
+		this->command_req.request.vel[leg[i]-1] = velocity;
+
+		if(new_acel_profile){
+			this->command_req.request.new_acel_profile[leg[i]-1].data = true;
+			this->command_req.request.acel[leg[i]-1] = acel;
+			this->command_req.request.decel[leg[i]-1] = decel;
+		}else{
+			this->command_req.request.new_acel_profile[leg[i]-1].data = false;
+			this->command_req.request.acel[leg[i]-1] = 0;
+			this->command_req.request.decel[leg[i]-1] = 0;
+		}
+
+	}
+
+	//If the commands are not being buffered, sends the msg
+	if(!are_commands_buffered){
+		//Sends the msg
+		this->sendCommands();
 	}
 
 	return;
@@ -469,8 +508,6 @@ void Clhero_robot::setLegVelocity (int leg,
 					float acel,
 					float decel){
 
-	clhero_gait_controller::LegCommandRequest msg;
-
 	//Checks if the pattern name is not the default.
 	if(gp_name=="None"){
 		ROS_INFO("No gait pattern name was set for node, command will not be sent.");
@@ -480,46 +517,132 @@ void Clhero_robot::setLegVelocity (int leg,
 	//Builds the msg
 	for(int i=1; i<=LEG_NUMBER; i++){
 
-		msg.request.position_command[i-1].data = false;
-
 		if(i==leg){
-			msg.request.new_command[i-1] = 1;
-			msg.request.pos[leg-1] = 0;
-			msg.request.vel[leg-1] = velocity;
+
+			this->is_new_command_req = true;
+
+			this->command_req.request.position_command[i-1].data = false;
+
+			this->command_req.request.new_command[i-1] = 1;
+			this->command_req.request.pos[leg-1] = 0;
+			this->command_req.request.vel[leg-1] = velocity;
 
 			if(new_acel_profile){
-				msg.request.new_acel_profile[leg-1].data = true;
-				msg.request.acel[leg-1] = acel;
-				msg.request.decel[leg-1] = decel;
+				this->command_req.request.new_acel_profile[leg-1].data = true;
+				this->command_req.request.acel[leg-1] = acel;
+				this->command_req.request.decel[leg-1] = decel;
 			}else{
-				msg.request.new_acel_profile[leg-1].data = false;
-				msg.request.acel[leg-1] = 0;
-				msg.request.decel[leg-1] = 0;
+				this->command_req.request.new_acel_profile[leg-1].data = false;
+				this->command_req.request.acel[leg-1] = 0;
+				this->command_req.request.decel[leg-1] = 0;
 			}
 			
-		}else{
-			msg.request.new_command[i-1] = 0;
-			msg.request.pos[i-1] = 0;
-			msg.request.vel[i-1] = 0;
-			msg.request.new_acel_profile[i-1].data = false;
-			msg.request.acel[i-1] = 0;
-			msg.request.decel[i-1] = 0;
 		}
+
 	}
 
-	//Sets the gait pattern name on the msg
-	msg.request.gait_pattern_name = gp_name;
-
-	//Sends the msg
-	if(command_srv_client.call(msg)){
-		/*if(msg.response.ans){
-			ROS_ERROR("Invalid command - gait pattern may not be active.");
-		}*/
-	}else{
-		ROS_ERROR("Command service could not be called.");
+	//If the commands are not being buffered, sends the msg
+	if(!are_commands_buffered){
+		//Sends the msg
+		this->sendCommands();
 	}
 
 	return;
+}
+
+//Set the velocity for multiple legs
+void Clhero_robot::setLegVelocity (std::vector<int> leg, 
+					float velocity,
+					bool new_acel_profile,
+					float acel,
+					float decel){
+
+	//Checks if the pattern name is not the default.
+	if(gp_name=="None"){
+		ROS_INFO("No gait pattern name was set for node, command will not be sent.");
+		return;
+	}
+
+	//Builds the msg
+	for(int i=0; i<leg.size(); i++){
+
+		this->is_new_command_req =  true;
+
+		this->command_req.request.new_command[leg[i]-1] = 1;
+
+		this->command_req.request.position_command[leg[i]-1].data = false;
+		this->command_req.request.vel[leg[i]-1] = velocity;
+
+		if(new_acel_profile){
+			this->command_req.request.new_acel_profile[leg[i]-1].data = true;
+			this->command_req.request.acel[leg[i]-1] = acel;
+			this->command_req.request.decel[leg[i]-1] = decel;
+		}else{
+			this->command_req.request.new_acel_profile[leg[i]-1].data = false;
+			this->command_req.request.acel[leg[i]-1] = 0;
+			this->command_req.request.decel[leg[i]-1] = 0;
+		}
+
+	}
+
+	//If the commands are not being buffered, sends the msg
+	if(!are_commands_buffered){
+		//Sends the msg
+		this->sendCommands();
+	}
+
+	return;
+
+}
+
+//Controls if the command request shall be sent inmediately
+//after the set function call or shall be buffered instead
+//If true, once the set function is called, the msg is sent
+void Clhero_robot::bufferCommands (bool c){
+
+	this->are_commands_buffered = c;
+	return;
+
+}
+
+//Clear the buffered command
+//By default the initial command is a velocity command with 0
+//as value for each leg.
+void Clhero_robot::clearCommand(){
+
+	for(int i=0; i<LEG_NUMBER; i++){
+		this->command_req.request.pos[i] = 0;
+		this->command_req.request.vel[i] = 0;
+		this->command_req.request.acel[i] = 0;
+		this->command_req.request.decel[i] = 0;
+		this->command_req.request.new_acel_profile[i].data = false;
+		this->command_req.request.position_command[i].data = false;
+		this->command_req.request.new_command[i] = 0;
+	}
+
+	this->is_new_command_req = false;
+
+	return;
+
+}
+
+//Sends the buffered command
+bool Clhero_robot::sendCommands(){
+
+	if(is_new_command_req){
+		//Sends the msg
+		if(command_srv_client.call(this->command_req)){
+			//Clears the msg
+			this->clearCommand();
+			return true;
+		}else{
+			ROS_ERROR("Command service could not be called.");
+			return false;
+		}
+	}
+	
+	return false;
+
 }
 
 //Function used to register new pattern name
@@ -531,6 +654,7 @@ void Clhero_robot::setGaitPatternName (std::string name){
 		ROS_ERROR("Gait Pattern name already set - name will not be changed");
 	}else{
 		gp_name = name;
+		this->command_req.request.gait_pattern_name = gp_name;
 	}
 	return;
 }
@@ -639,7 +763,7 @@ std::vector<float> Clhero_robot::getLegsVelocity(){
 	return ls;
 }
 
-std::vector<float> Clhero_robot::getLegsTorque(){
+std::vector<float> Clhero_robot::getLegsEffort(){
 	std::vector<float> ls;
 	leg_state_mutex.lock();
 	ls = this->leg_state.torq;

@@ -4,6 +4,7 @@
 	<arg name="patterns" default="true"/>
 	<arg name="gazebo_sim" default="false"/>
 	<arg name="hardware" default="true"/>
+	<arg name="joy" default="false"/>	
 
 	<!-- Parametros del YAML -->
 	<!--rosparam file="$(find clhero_hw_control)/config/clhero_params.yaml" /-->
@@ -25,6 +26,14 @@
 			<!--By default, the launch file includes the patterns' nodes-->
 			<include file="$(find clhero_gait_patterns_definition)/launch/patterns.launch" if="$(arg patterns)"/>
 		</group>
+
+	</group>
+
+	<group>
+		
+		<node name="clhero_teleop" pkg="clhero_teleop" type="clhero_teleop_node" if="$(arg joy)" output="screen"/>
+		<node name="joy" pkg="joy" type="joy_node" if="$(arg joy)" output="screen"/>		
+
 	</group>
 
 	<!--node name="clhero_teleop" pkg="clhero_teleop" type="clhero_teleop_node" if="$(arg hardware)" output="screen"/-->

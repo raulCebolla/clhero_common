@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-  INCLUDE_DIRS include
+#  INCLUDE_DIRS include
   LIBRARIES clhero_teleop
   CATKIN_DEPENDS clhero_gait_controller joy roscpp std_msgs
 #  DEPENDS system_lib

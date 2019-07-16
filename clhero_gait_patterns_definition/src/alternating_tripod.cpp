@@ -24,7 +24,7 @@
 #define STATE_LOOP_RATE 100
 #define PATTERN_NAME "alternating_tripod"
 #define PI 3.14159265359
-#define GROUND_ANGLE (1.5707963267948966) // 60 [º]
+#define GROUND_ANGLE (0.7853981633974483) // 45 [º]
 #define AIR_ANGLE (2*PI-GROUND_ANGLE)
 #define GROUND_VELOCITY 3 // aprox 30 [rpm]
 #define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
@@ -40,6 +40,7 @@
 //Tripods
 const std::vector<int> tripod_1 = {1, 4, 5};
 const std::vector<int> tripod_2 = {2, 3, 6};
+const std::vector<int> all_legs = {1, 2, 3, 4, 5, 6};
 
 //----------------------------------------------------
 //    Functions
@@ -67,9 +68,12 @@ void state_1 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
-	for(int i=1; i <= LEG_NUMBER; i++){
+	/*for(int i=1; i <= LEG_NUMBER; i++){
 		clhr->setLegPosition(i, 0, GROUND_VELOCITY);
-	}
+	}*/
+	clhr->setLegPosition(all_legs, 0, GROUND_VELOCITY);
+
+	clhr->sendCommands();
 
 	//------------------------------------------------
 	// State's core loop
@@ -122,13 +126,20 @@ void state_2 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
-	for(int i=0; i < tripod_1.size(); i++){
+	/*for(int i=0; i < tripod_1.size(); i++){
 		clhr->setLegPosition(tripod_1[i], TAKE_OFF_ANG, GROUND_VELOCITY);
-	}
+	}*/
 
-	for(int i=0; i < tripod_2.size(); i++){
+	clhr->setLegPosition(tripod_1, TAKE_OFF_ANG, GROUND_VELOCITY);
+
+	/*for(int i=0; i < tripod_2.size(); i++){
 		clhr->setLegPosition(tripod_2[i], LANDING_ANG, (-1.0)*GROUND_VELOCITY);
-	}
+	}*/
+
+	clhr->setLegPosition(tripod_2, LANDING_ANG, (2)*GROUND_VELOCITY);
+
+	//Sends all the commands
+	clhr->sendCommands();
 
 	//------------------------------------------------
 	// State's core loop
@@ -187,13 +198,19 @@ void state_3 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
-	for(int i=0; i < tripod_1.size(); i++){
+	/*for(int i=0; i < tripod_1.size(); i++){
 		clhr->setLegPosition(tripod_1[i], LANDING_ANG, AIR_VELOCITY);
-	}
+	}*/
 
-	for(int i=0; i < tripod_2.size(); i++){
+	clhr->setLegPosition(tripod_1, LANDING_ANG, AIR_VELOCITY);
+
+	/*for(int i=0; i < tripod_2.size(); i++){
 		clhr->setLegPosition(tripod_2[i], TAKE_OFF_ANG, GROUND_VELOCITY);
-	}
+	}*/
+
+	clhr->setLegPosition(tripod_2, TAKE_OFF_ANG, GROUND_VELOCITY);
+
+	clhr->sendCommands();
 
 	//------------------------------------------------
 	// State's core loop
@@ -252,13 +269,19 @@ void state_4 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
-	for(int i=0; i < tripod_1.size(); i++){
+	/*for(int i=0; i < tripod_1.size(); i++){
 		clhr->setLegPosition(tripod_1[i], TAKE_OFF_ANG, GROUND_VELOCITY);
-	}
+	}*/
 
-	for(int i=0; i < tripod_2.size(); i++){
+	clhr->setLegPosition(tripod_1, TAKE_OFF_ANG, GROUND_VELOCITY);
+
+	/*for(int i=0; i < tripod_2.size(); i++){
 		clhr->setLegPosition(tripod_2[i], LANDING_ANG, AIR_VELOCITY);
-	}
+	}*/
+
+	clhr->setLegPosition(tripod_2, LANDING_ANG, AIR_VELOCITY);
+
+	clhr->sendCommands();
 
 	//------------------------------------------------
 	// State's core loop
@@ -326,6 +349,9 @@ int main (int argc, char** argv){
 
 	//Register the new gait pattern
 	clhero::registerGaitPattern(pattern_name);
+
+	//Sets the buffer option for the msgs
+	clhr.bufferCommands(true);
 
 	//----------------------------------------------------
 	//    State's instantiation

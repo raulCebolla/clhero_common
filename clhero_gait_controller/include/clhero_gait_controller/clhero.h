@@ -108,6 +108,15 @@ class Clhero_robot {
 	//Leg's Status considered: position, velocity and torque
 	LegState leg_state;
 
+	//Flag which indicates if the commands are being buffered
+	bool are_commands_buffered;
+
+	//Command request
+	clhero_gait_controller::LegCommandRequest command_req;
+
+	//Flag indicating that there is a new request to be sent
+	bool is_new_command_req;
+
 	//----------------------------------------------------
 	//    Private methods 
 	//----------------------------------------------------
@@ -145,12 +154,40 @@ public:
 						float acel = DEFAULT_ACEL,
 						float decel = DEFAULT_ACEL);
 
+	//For multiple legs
+	void setLegPosition (std::vector<int> legs, 
+						float positions, 
+						float velocity = DEFAULT_VEL,
+						bool new_acel_profile = true,
+						float acel = DEFAULT_ACEL,
+						float decel = DEFAULT_ACEL);
+
 	//Set the Velocity for a leg
 	void setLegVelocity (int leg,  
 						float velocity,
 						bool new_acel_profile = true,
 						float acel = DEFAULT_ACEL,
 						float decel = DEFAULT_ACEL);
+
+	//For multiple legs
+	void setLegVelocity (std::vector<int> legs,  
+						float velocity,
+						bool new_acel_profile = true,
+						float acel = DEFAULT_ACEL,
+						float decel = DEFAULT_ACEL);
+
+	//Controls if the command request shall be sent inmediately
+	//after the set function call or shall be buffered instead
+	//If true, once the set function is called, the msg is sent
+	void bufferCommands (bool c);
+
+	//Clear the buffered command
+	//By default the initial command is a velocity command with 0
+	//as value for each leg.
+	void clearCommand();
+
+	//Sends the buffered command
+	bool sendCommands();
 
 	//Set the gait pattern name
 	void setGaitPatternName (std::string name);
@@ -177,7 +214,7 @@ public:
 	LegState getLegState ();
 	std::vector<float> getLegsPosition();
 	std::vector<float> getLegsVelocity();
-	std::vector<float> getLegsTorque();
+	std::vector<float> getLegsEffort();
 
 	//Function that returns the arguments
 	std::map<std::string, std::string> getArgs();

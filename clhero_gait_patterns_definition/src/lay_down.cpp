@@ -22,7 +22,7 @@
 //Declare the defines needed in the gait pattern
 
 #define STATE_LOOP_RATE 200
-#define PATTERN_NAME "stand_up"
+#define PATTERN_NAME "lay_down"
 #define PI 3.14159265359
 #define GROUND_ANGLE (1.5707963267948966) // 60 [º]
 #define AIR_ANGLE (2*PI-GROUND_ANGLE)
@@ -33,6 +33,8 @@
 #define ANG_THR 0.12217304763960307
 #define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
 #define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
+#define TEST_VEL 1.5
+#define REST_ANG 3.490658503988659 //[rads] = 200[º]
 
 //----------------------------------------------------
 //    Global Variables
@@ -58,13 +60,18 @@ void state_1 (clhero::Clhero_robot* clhr){
 
 	ros::Rate loop_rate(STATE_LOOP_RATE);
 
+	std::vector<float> position;
+
 	//------------------------------------------------
 	// State's initial statement
 	//------------------------------------------------
 
+	position = clhr->getLegsPosition();
+
 	for(int i=1; i <= LEG_NUMBER; i++){
-		clhr->setLegPosition(i, 0, DEFAULT_VEL);
+		clhr->setLegPosition(i, REST_ANG, (-1.0)*DEFAULT_VEL);	
 	}
+
 	clhr->sendCommands();
 
 	//------------------------------------------------

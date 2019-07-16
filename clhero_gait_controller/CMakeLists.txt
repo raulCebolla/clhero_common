@@ -52,6 +52,7 @@ find_package(catkin REQUIRED COMPONENTS
    LegCommand.msg
    PatternCommand.msg
    LegState.msg
+   OffsetSetting.msg
  )
 
 ## Generate services in the 'srv' folder

@@ -60,12 +60,13 @@ void joystick_cb(const sensor_msgs::Joy::ConstPtr& joy)
 		move_command = 10;
 	}
 	// Down
-	else if((joy->axes[4] == 0) && (joy->axes[5] == 0) && (joy->buttons[1] == 1) && (joy->buttons[3] == 0))
-	{
+	else if((joy->axes[4] == 0) && (joy->axes[5] == 0) && (joy->buttons[1] == 1) && (joy->buttons[3] == 0)){
 		move_command = -10;
-	}
-	else
+	}else if((joy->buttons[4] == 1) && (joy->buttons[5] == 1) && (joy->buttons[6] == 1) && (joy->buttons[7] == 1)){
+		move_command = 70;
+	}else{
 		move_command = 0;
+	}
 }
 
 //----------------------------------------------------
@@ -102,30 +103,30 @@ int main(int argc, char **argv)
 				if(move_command_old == -2)
 				{
 					msg.request.pattern_name="turn_right_tripod";
-					msg.request.order="stop";
+					msg.request.order="pause";
 				}
 
 				else if(move_command_old == 2)
 				{
 					msg.request.pattern_name = "turn_left_tripod";
-					msg.request.order = "stop";
+					msg.request.order = "pause";
 				}
 
 				else if(move_command_old == 1)
 				{
 					msg.request.pattern_name = "alternating_tripod";
-					msg.request.order = "stop";
+					msg.request.order = "pause";
 				}
 				else if(move_command_old == 10)
 				{
 					msg.request.pattern_name = "stand_up";
-					msg.request.order = "stop";
+					msg.request.order = "pause";
 				}
 
 				else if(move_command_old == -10)
 				{
-					msg.request.pattern_name = "get_down";
-					msg.request.order = "stop";
+					msg.request.pattern_name = "lay_down";
+					msg.request.order = "pause";
 				}
 			}
 
@@ -231,15 +232,15 @@ int main(int argc, char **argv)
 			}
 
 			// Get down
-			else if(move_command == -10)
-			{
-				ROS_INFO("Get Down");
-				msg.request.pattern_name = "get_down";
+			else if(move_command == -10){
+				ROS_INFO("lay Down");
+				msg.request.pattern_name = "lay_down";
 				msg.request.order = "start";
-			}
-
-			else
-			{
+			}else if(move_command == 70){
+				ROS_INFO("Offset setting");
+				msg.request.pattern_name="offset_setting";
+				msg.request.order = "start";
+			}else{
 				ROS_INFO("Stop command");
 				msg.request.order = "stop";
 			}
