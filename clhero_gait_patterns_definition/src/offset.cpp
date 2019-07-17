@@ -26,7 +26,7 @@
 #define STATE_LOOP_RATE 200
 #define PATTERN_NAME "offset_setting"
 #define TEST_VEL 0.25
-#define EFF_THR 600
+#define EFF_THR 500
 #define RECOVER_VEL 3
 #define REST_ANG 3.490658503988659 //[rads] = 200[º]
 #define MAX_TAKE_OFF_ANG 1.8104073438134423 //[rads] = 103.7287 [º]
@@ -101,7 +101,7 @@ void state_1 (clhero::Clhero_robot* clhr){
 			//If this leg has not set the offset yet
 			if(!is_offset_set[i]){
 				//If the effort surpases the effort threshold
-				if(fabs(effort[i]) > EFF_THR){
+				if(effort[i] < (-1.0)*EFF_THR){
 					ROS_INFO("Leg %d in position");
 					//Halts the movement
 					clhr->setLegVelocity(i+1, 0);

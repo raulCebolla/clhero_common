@@ -24,7 +24,7 @@
 #define STATE_LOOP_RATE 100
 #define PATTERN_NAME "turn_left_tripod"
 #define PI 3.14159265359
-#define GROUND_ANGLE (1.5707963267948966) // 60 [º]
+#define GROUND_ANGLE (0.7853981633974483) // 45 [º]
 #define AIR_ANGLE (2*PI-GROUND_ANGLE)
 #define GROUND_VELOCITY (3) // aprox 30 [rpm]
 #define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
@@ -32,6 +32,7 @@
 #define ANG_THR 0.12217304763960307
 #define ANG_L2 (2*PI-GROUND_ANGLE/2.0)
 #define ANG_L1 (GROUND_ANGLE/2.0)
+#define STAND_UP_VEL 2
 
 //----------------------------------------------------
 //    Global Variables
@@ -40,6 +41,7 @@
 //Tripods
 const std::vector<int> tripod_1 = {1, 4, 5};
 const std::vector<int> tripod_2 = {2, 3, 6};
+const std::vector<int> all_legs = {1, 2, 3, 4, 5, 6};
 
 //----------------------------------------------------
 //    Functions
@@ -64,11 +66,26 @@ void state_1 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
+	ROS_INFO("[Alternating tripod turn left]: Entered state 1");
+
 	std::vector<float> state;
 	int legs_in_position = 0;
 
-	for(int i=1; i <= LEG_NUMBER; i++){
-		clhr->setLegPosition(i, 0, GROUND_VELOCITY);
+	//Check if it's already in position
+	state = clhr->getLegsPosition();
+
+	for(int i=0; i < LEG_NUMBER; i++){
+		if((fabs(state[i] - 0) < ANG_THR)||(fabs(state[i] - 2*PI) < ANG_THR)){
+			legs_in_position++;
+		}
+	}
+
+	if(legs_in_position == LEG_NUMBER){
+		clhr->transition(2);
+	}else{
+		legs_in_position = 0;
+		clhr->setLegPosition(all_legs, 0, STAND_UP_VEL);
+		clhr->sendCommands();
 	}
 
 	//------------------------------------------------
@@ -120,16 +137,15 @@ void state_2 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
+	ROS_INFO("[Alternating tripod turn left]: Entered state 2");
+
 	std::vector<float> state;
 	int legs_in_position = 0;
 
-	for(int i=0; i < tripod_1.size(); i++){
-		clhr->setLegPosition(tripod_1[i], 0, GROUND_VELOCITY);
-	}
+	//clhr->setLegPosition(tripod_1, 0, GROUND_VELOCITY);
+	clhr->setLegPosition(tripod_2, PI, (1.5)*GROUND_VELOCITY);
 
-	for(int i=0; i < tripod_2.size(); i++){
-		clhr->setLegPosition(tripod_2[i], PI, GROUND_VELOCITY);
-	}
+	clhr->sendCommands();
 
 	//------------------------------------------------
 	// State's core loop
@@ -185,6 +201,8 @@ void state_3 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
+	ROS_INFO("[Alternating tripod turn left]: Entered state 3");
+
 	std::vector<float> state;
 	int legs_in_position = 0;
 
@@ -207,6 +225,8 @@ void state_3 (clhero::Clhero_robot* clhr){
 			clhr->setLegPosition(tripod_2[i], ANG_L2, AIR_VELOCITY);
 		}
 	}
+
+	clhr->sendCommands();
 
 	//------------------------------------------------
 	// State's core loop
@@ -278,6 +298,8 @@ void state_4 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
+	ROS_INFO("[Alternating tripod turn left]: Entered state 4");
+
 	std::vector<float> state;
 	int legs_in_position = 0;
 
@@ -300,6 +322,8 @@ void state_4 (clhero::Clhero_robot* clhr){
 			clhr->setLegPosition(tripod_2[i], ANG_L1, GROUND_VELOCITY);
 		}
 	}
+
+	clhr->sendCommands();
 
 	//------------------------------------------------
 	// State's core loop
@@ -383,6 +407,8 @@ int main (int argc, char** argv){
 
 	//Register the new gait pattern
 	clhero::registerGaitPattern(pattern_name);
+
+	clhr.bufferCommands(true);
 
 	//----------------------------------------------------
 	//    State's instantiation

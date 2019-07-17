@@ -40,6 +40,7 @@
 //    Global Variables
 //----------------------------------------------------
 
+const std::vector<int> all_legs = {1, 2, 3, 4, 5, 6};
 
 //----------------------------------------------------
 //    Functions
@@ -66,13 +67,27 @@ void state_1 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
-	position = clhr->getLegsPosition();
+	ROS_INFO("[Lay down]: Entered state 1");
 
-	for(int i=1; i <= LEG_NUMBER; i++){
-		clhr->setLegPosition(i, REST_ANG, (-1.0)*DEFAULT_VEL);	
+	//Check if it's already in position
+	std::vector<float> state;
+	int legs_in_position = 0;
+
+	state = clhr->getLegsPosition();
+
+	for(int i=0; i < LEG_NUMBER; i++){
+		if((fabs(state[i] - REST_ANG) < ANG_THR)){
+			legs_in_position++;
+		}
 	}
 
-	clhr->sendCommands();
+	if(legs_in_position == LEG_NUMBER){
+		
+	}else{
+		legs_in_position = 0;
+		clhr->setLegPosition(all_legs, REST_ANG, (-1.0)*DEFAULT_VEL);
+		clhr->sendCommands();
+	}
 
 	//------------------------------------------------
 	// State's core loop
