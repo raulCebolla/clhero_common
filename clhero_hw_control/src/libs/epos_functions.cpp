@@ -2,7 +2,7 @@
 #include <cmath>
 
 #define PI 3.14159265359
-#define REDUCTION 33
+#define REDUCTION 529.0/16.0
 #define RADS_PER_REV (2*PI)
 #define DEG_PER_REV 360
 #define PULSES_PER_REV 4000
@@ -289,7 +289,7 @@ double epos_functions::GetPosition(int motor)
     }
 
     position_actual_raw += this->offset[motor-1];
-    position_actual = (position_actual_raw * 2 * PI) / (4000.0 * 33.0); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
+    position_actual = (position_actual_raw * 2 * PI) / (4000.0 * 529.0/16.0); //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
 
     return position_actual;
 }
@@ -408,6 +408,27 @@ double epos_functions::GetVelocity(int motor){
     return velocity_actual;
 }
 
+//En rad/s
+double epos_functions::GetRawVelocity(int motor){
+
+    void* keyHandle_local = keyHandle;
+    unsigned int error_code = 0;
+    int result = 0;
+    int velocity_actual_raw = 0;
+    double velocity_actual = 0;
+    
+    if((result = VCS_GetVelocityIs(keyHandle_local, motor, &velocity_actual_raw, &error_code)) == 0)
+    {
+        ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
+        LogError("GetVelocity", result, error_code);
+        result = 0;
+        return result;
+    }
+    
+    velocity_actual = (double)velocity_actual_raw; //Encoder de cuadratura de 4 pulsos, con un encoder de 1000 pulsos -> 4000 pulsos por vuelta.
+    return velocity_actual;
+}
+
 bool epos_functions::HaltVelocityMovement(int motor){
 
     void* keyHandle_local = keyHandle;
@@ -444,6 +465,49 @@ int epos_functions::GetEffort(int motor){
     effort_actual = current_actual_raw; 
     
     return effort_actual;
+
+}
+
+int epos_functions::GetRawEffort(int motor){
+
+    void* keyHandle_local = keyHandle;
+    unsigned int error_code = 0;
+    int result = 0;
+    short current_actual_raw = 0;
+    int effort_actual = 0;
+    
+    if((result = VCS_GetCurrentIs(keyHandle_local, motor, &current_actual_raw, &error_code)) == 0)
+    {
+        ROS_INFO("ERROR: No se ha podido llegar a la consigna en el motor %d", motor);
+        LogError("GetEffort", result, error_code);
+        result = 0;
+        return result;
+    }
+    
+    effort_actual = current_actual_raw; 
+    
+    return effort_actual;
+
+}
+
+void epos_functions::GetErrors(int motor){
+
+    void* keyHandle_local = keyHandle;
+
+    BYTE numOfDeviceErrors = 0;
+    DWORD functionErrorCode = 0;
+    DWORD deviceErrorCode = 0;
+
+    //get number of device errors
+    if(VCS_GetNbOfDeviceError(keyHandle_local, motor, &numOfDeviceErrors, &functionErrorCode)){
+        for(BYTE errorNum = 1; errorNum <=  numOfDeviceErrors; errorNum++){
+            VCS_GetDeviceErrorCode(keyHandle_local, motor, errorNum, &deviceErrorCode, &functionErrorCode);
+            std::cerr << "Error in leg: " << motor << " with error code: 0x1003 " << std::hex << deviceErrorCode << std::endl;
+            //ROS_INFO("Error in leg %d with error code: %d", motor, deviceErrorCode);
+        }
+    }else{
+        ROS_INFO("No errors in leg %d", motor);
+    }
 
 }
 

@@ -16,6 +16,8 @@
 #include <clhero_gait_controller/LegCommand.h>
 #include <clhero_gait_controller/LegState.h>
 #include <clhero_gait_controller/OffsetSetting.h>
+#include <clhero_hw_control/RawState.h>
+#include <clhero_hw_control/GetErrors.h>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -75,6 +77,7 @@ public:
 
 //Publisher of the legs_state_msg
 ros::Publisher legs_state_pub;
+//ros::Publisher raw_state_pub;
 
 //Publisher of each of the command msgs
 std::vector<ros::Publisher> controller_command_pub;
@@ -183,6 +186,7 @@ void StateUpdateMethod (){
 
 	//Leg State msg
 	clhero_gait_controller::LegState leg_state_msg;
+	//clhero_hw_control::RawState raw_state_msg;
 
 	double position, velocity, effort;
 	int n = 0;
@@ -212,6 +216,12 @@ void StateUpdateMethod (){
 		leg_state_msg.vel.push_back(velocity);
 		leg_state_msg.torq.push_back(effort);
 
+		/*
+		raw_state_msg.pos.push_back(epos_f->GetRawPosition(mapMotor(i+1)));
+		raw_state_msg.vel.push_back(epos_f->GetRawVelocity(mapMotor(i+1)));
+		raw_state_msg.eff.push_back(epos_f->GetRawEffort(mapMotor(i+1)));
+		*/
+
 		readings_reg.push_back((double)i);
 		readings_reg.push_back(position);
 		readings_reg.push_back(velocity);
@@ -223,6 +233,7 @@ void StateUpdateMethod (){
 
 	//Publishes the msg
 	legs_state_pub.publish(leg_state_msg);
+	//raw_state_pub.publish(raw_state_msg);
 
 	return;
 }
@@ -265,6 +276,19 @@ void offsetSettingCallback(const clhero_gait_controller::OffsetSetting::ConstPtr
 	}
 
 	return;
+}
+
+bool get_errors_srv_callback (clhero_hw_control::GetErrors::Request &req,
+              				  clhero_hw_control::GetErrors::Response &res){
+
+  for (int i = 1; i<=LEG_NUMBER; i++){
+  	epos_f->GetErrors(i);
+  }
+
+  res.ok = true;
+
+  return true;
+
 }
 
 //----------------------------------------------------
@@ -509,10 +533,13 @@ int main(int argc, char **argv){
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 10);
+  //raw_state_pub = nh.advertise<clhero_hw_control::RawState>("legs_raw_state", 10);
   
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 100, legCommandCallback);
   ros::Subscriber offset_sub = nh.subscribe("offset_setting", 100, offsetSettingCallback);
+
+  ros::ServiceServer get_errors_service = nh.advertiseService("get_motor_errors", get_errors_srv_callback);
 
   //----------------------------------------------------
   //    Core loop of the node

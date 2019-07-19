@@ -9,6 +9,11 @@
 
 #define LEG_NUMBER 6
 
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
+typedef int BOOL;
+typedef unsigned int DWORD;
+
 //Unidades de maxon:
 //  Posición    [pulsos de encoder]
 //  Velocidad   [rpm]
@@ -49,9 +54,13 @@ public:
     int SetVelocityProfile(int motor, double acceleration, double deceleration);
     int MoveWithVelocity(int motor, double velocity);
     double GetVelocity(int motor);
+    double GetRawVelocity(int motor);
     bool HaltVelocityMovement(int motor);
 
     int GetEffort(int);
+    int GetRawEffort(int);
+
+    void GetErrors(int motor);
 
     void closeAllDevices();
 
