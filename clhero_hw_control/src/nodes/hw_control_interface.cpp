@@ -211,7 +211,8 @@ void StateUpdateMethod (){
 			velocity = (-1.0)*velocity;
 			effort = (-1.0)*effort;
 		}
-		
+
+		leg_state_msg.stamp = ros::Time::now();		
 		leg_state_msg.pos.push_back(position);
 		leg_state_msg.vel.push_back(velocity);
 		leg_state_msg.torq.push_back(effort);

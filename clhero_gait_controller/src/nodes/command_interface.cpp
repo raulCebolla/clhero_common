@@ -114,6 +114,9 @@ std::mutex mtx;
 //Leg's state
 clhero::LegState legs_state;
 
+//Last msg timestamp
+ros::Time last_msg_stamp;
+
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
@@ -196,6 +199,7 @@ void legStateThread (ros::Publisher* pub_leg_state){
     mtx.lock();
 
     //Writes the msg
+    msg.stamp = last_msg_stamp;
     msg.pos = legs_state.pos;
     msg.vel = legs_state.vel;
     msg.torq = legs_state.torq;
@@ -216,6 +220,7 @@ void leg_state_msg_callback(const clhero_gait_controller::LegState::ConstPtr& ms
 
   //Reads the msg and updates the legs'state
   mtx.lock();
+  last_msg_stamp = msg->stamp;
   legs_state.pos = msg->pos;
   legs_state.vel = msg->vel;
   legs_state.torq = msg->torq;
@@ -238,6 +243,9 @@ int main(int argc, char **argv){
   ros::NodeHandle nh;
 
   checkDebugMode(argc, argv);
+
+  //Initializes the timestamp
+  last_msg_stamp = ros::Time::now();
 
   //Legs'state initialization
   for(int i=0; i<6; i++){

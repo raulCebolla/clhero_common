@@ -5,6 +5,9 @@
 # the legs.
 #================================================================
 
+#Time stamp in which the state was taken
+time stamp
+
 #Legs'position [rad]
 float32[] pos
 
