@@ -24,16 +24,16 @@
 #define STATE_LOOP_RATE 100
 #define PATTERN_NAME "alternating_tripod"
 #define PI 3.14159265359
-#define GROUND_ANGLE 0.7853981633974483 // 45 [º]
-#define AIR_ANGLE 5.497787143782138
-#define GROUND_VELOCITY 3.141592653589793 // aprox 30 [rpm]
-#define AIR_VELOCITY (1.2*21.991148575128552)
-#define DEF_ACEL 
+#define GROUND_ANGLE 1.0471975511965976 // 60 [º]
+#define AIR_ANGLE (2*PI - GROUND_ANGLE)
+#define GROUND_VELOCITY (3.141592653589793/2.5) // aprox 30 [rpm]
+#define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
 #define LEG_NUMBER 6
-#define ANG_THR 0.12217304763960307
+#define ANG_THR 0.17453292519943295 // 10[º]
 #define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
 #define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
 #define STAND_UP_VEL 2 
+#define REV_ANG_THR PI// 300 [º]
 
 //----------------------------------------------------
 //    Global Variables
@@ -124,6 +124,83 @@ void state_1 (clhero::Clhero_robot* clhr){
 	return;
 }
 
+//2nd version of stand up state
+//Raise the robot into a standing position
+void stand_up_2_state (clhero::Clhero_robot* clhr){
+
+	//------------------------------------------------
+	// State's loop rate
+	//------------------------------------------------
+
+	ros::Rate loop_rate(STATE_LOOP_RATE);
+
+	//------------------------------------------------
+	// State's initial statement
+	//------------------------------------------------
+
+	ROS_INFO("[Alternating tripod]: Entered state 1");
+
+	std::vector<float> state;
+	int legs_in_position = 0;
+
+	//Check if it's already in position
+	state = clhr->getLegsPosition();
+
+	for(int i=0; i < LEG_NUMBER; i++){
+		if((fabs(state[i] - 0) < ANG_THR)||(fabs(state[i] - 2*PI) < ANG_THR)){
+			legs_in_position++;
+		}
+	}
+
+	if(legs_in_position == LEG_NUMBER){
+		clhr->transition(2);
+	}else{
+		legs_in_position = 0;
+		for(int i=0; i<LEG_NUMBER; i++){
+			if(state[i] > REV_ANG_THR){
+				clhr->setLegPosition(i+1, 0, STAND_UP_VEL); 			
+			}else{
+				clhr->setLegPosition(i+1, 0, (-0.8)*STAND_UP_VEL);
+			}
+		}
+		clhr->sendCommands();
+	}
+
+	//------------------------------------------------
+	// State's core loop
+	//------------------------------------------------
+
+	while(clhr->activeState() == 1){
+
+		//--------------------------------------------
+		// State's transition checking
+		//--------------------------------------------
+
+		//Here the state shall check for transitions
+		//in case the conditions for a transition are
+		//met, this shall be done by:
+		//	clhr->transition(new_state_id);
+
+		state = clhr->getLegsPosition();
+
+		for(int i=0; i < LEG_NUMBER; i++){
+			if((fabs(state[i] - 0) < ANG_THR)||(fabs(state[i] - 2*PI) < ANG_THR)){
+				legs_in_position++;
+			}
+		}
+
+		if(legs_in_position == LEG_NUMBER){
+			clhr->transition(2);
+		}else{
+			legs_in_position = 0;
+		}
+
+		loop_rate.sleep();
+	}
+
+	return;
+}
+
 //Estado 2
 void state_2 (clhero::Clhero_robot* clhr){
 
@@ -152,7 +229,7 @@ void state_2 (clhero::Clhero_robot* clhr){
 		clhr->setLegPosition(tripod_2[i], LANDING_ANG, (-1.0)*GROUND_VELOCITY);
 	}*/
 
-	clhr->setLegPosition(tripod_2, LANDING_ANG, (2)*GROUND_VELOCITY);
+	clhr->setLegPosition(tripod_2, LANDING_ANG, (-2)*GROUND_VELOCITY);
 
 	//Sends all the commands
 	clhr->sendCommands();
@@ -378,7 +455,7 @@ int main (int argc, char** argv){
 	//----------------------------------------------------
 
 	//attach the states set
-	clhr.attachState(1, state_1, STARTING_STATE);
+	clhr.attachState(1, stand_up_2_state, STARTING_STATE);
 	clhr.attachState(2, state_2);
 	clhr.attachState(3, state_3);
 	clhr.attachState(4, state_4);
