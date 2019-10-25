@@ -2,7 +2,7 @@
 #include <cmath>
 
 #define PI 3.14159265359
-#define REDUCTION 529.0/16.0
+#define REDUCTION (529.0/16.0)
 #define RADS_PER_REV (2*PI)
 #define DEG_PER_REV 360
 #define PULSES_PER_REV 4000

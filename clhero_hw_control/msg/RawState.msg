@@ -7,6 +7,7 @@
 #	the maxon motors
 #=====================================================
 
+time stamp
 
 #Position [encoder pulses]
 float64[] pos

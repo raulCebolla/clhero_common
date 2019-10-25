@@ -77,7 +77,7 @@ public:
 
 //Publisher of the legs_state_msg
 ros::Publisher legs_state_pub;
-//ros::Publisher raw_state_pub;
+ros::Publisher raw_state_pub;
 
 //Publisher of each of the command msgs
 std::vector<ros::Publisher> controller_command_pub;
@@ -186,12 +186,15 @@ void StateUpdateMethod (){
 
 	//Leg State msg
 	clhero_gait_controller::LegState leg_state_msg;
-	//clhero_hw_control::RawState raw_state_msg;
+	clhero_hw_control::RawState raw_state_msg;
 
 	double position, velocity, effort;
 	int n = 0;
 
 	std::vector<double> readings_reg;	
+
+	leg_state_msg.stamp = ros::Time::now();
+	raw_state_msg.stamp = leg_state_msg.stamp;	
 
 	//For each leg
 	for(int i = 0; i < LEG_NUMBER; i++){
@@ -211,17 +214,16 @@ void StateUpdateMethod (){
 			velocity = (-1.0)*velocity;
 			effort = (-1.0)*effort;
 		}
-
-		leg_state_msg.stamp = ros::Time::now();		
+	
 		leg_state_msg.pos.push_back(position);
 		leg_state_msg.vel.push_back(velocity);
 		leg_state_msg.torq.push_back(effort);
 
-		/*
+		
 		raw_state_msg.pos.push_back(epos_f->GetRawPosition(mapMotor(i+1)));
 		raw_state_msg.vel.push_back(epos_f->GetRawVelocity(mapMotor(i+1)));
 		raw_state_msg.eff.push_back(epos_f->GetRawEffort(mapMotor(i+1)));
-		*/
+		
 
 		readings_reg.push_back((double)i);
 		readings_reg.push_back(position);
@@ -234,7 +236,7 @@ void StateUpdateMethod (){
 
 	//Publishes the msg
 	legs_state_pub.publish(leg_state_msg);
-	//raw_state_pub.publish(raw_state_msg);
+	raw_state_pub.publish(raw_state_msg);
 
 	return;
 }
@@ -534,7 +536,7 @@ int main(int argc, char **argv){
 
   //Publishers
   legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 10);
-  //raw_state_pub = nh.advertise<clhero_hw_control::RawState>("legs_raw_state", 10);
+  raw_state_pub = nh.advertise<clhero_hw_control::RawState>("legs_raw_state", 10);
   
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 100, legCommandCallback);
