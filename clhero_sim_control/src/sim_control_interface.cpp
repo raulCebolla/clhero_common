@@ -117,7 +117,7 @@ Leg_state leg_state;
 std::mutex leg_state_mtx;
 
 //Controller's namespace
-const std::string controller_namespace = "/hexapodo";
+const std::string controller_namespace = "/clhero";
 
 //----------------------------------------------------
 //    Functions
@@ -318,6 +318,7 @@ void jointStatesCallback (const sensor_msgs::JointState::ConstPtr& msg){
 
   leg_state_mtx.lock();
   for(int i=0; i < LEG_NUMBER; i++){
+    leg_state_msg.stamp = ros::Time::now();
     leg_state_msg.pos.push_back(fixAngle(msg->position[i]));
     leg_state_msg.vel.push_back(msg->velocity[i]);
     leg_state_msg.torq.push_back(msg->effort[i]);
@@ -365,7 +366,7 @@ int main(int argc, char **argv){
 
   //Topics subscription
   ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 1000, legCommandCallback);
-  ros::Subscriber joint_states_sub = nh.subscribe("/hexapodo/joint_states", 1000, jointStatesCallback);
+  ros::Subscriber joint_states_sub = nh.subscribe("/clhero/joint_states", 1000, jointStatesCallback);
 
   //Client declaration
   switch_controller_cli = nh.serviceClient<controller_manager_msgs::SwitchController>(controller_namespace + "/controller_manager/switch_controller");
