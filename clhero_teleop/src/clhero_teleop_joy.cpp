@@ -19,12 +19,14 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/Joy.h>
+#include <string>
 #include <clhero_gait_controller/GaitPatternControl.h>
 
 //----------------------------------------------------
 //    Defines
 //----------------------------------------------------
 
+enum Gait_pattern {none, alternating_tripod, alternating_tripod_left, alternating_tripod_right};
 
 //----------------------------------------------------
 //    Global Variables
@@ -32,6 +34,8 @@
 ros::ServiceClient client;
 int move_command = 0;	// 1 = avance; 2 = izquierda; -2 = derecha; 0 = paro
 int move_command_old = 0;
+
+Gait_pattern current_gp = none;
 
 //----------------------------------------------------
 //    Callbacks
@@ -134,8 +138,13 @@ int main(int argc, char **argv)
 			else if(move_command == 1)
 			{
 				ROS_INFO("Forward command");
-				msg.request.pattern_name = "alternating_tripod";
-				msg.request.order = "start";
+				msg.request.pattern_name = "alternating_tripod";	
+				if(current_gp == alternating_tripod){
+					msg.request.order = "continue";
+				}else{
+					msg.request.order = "start";
+					current_gp = alternating_tripod;
+				}
 				/*if(move_command_old == 0)
 				{
 					msg.request.pattern_name = "alternating_tripod";
@@ -165,8 +174,14 @@ int main(int argc, char **argv)
 			else if(move_command == -2)
 			{
 				ROS_INFO("Turn right command");
-				msg.request.pattern_name = "turn_right_tripod";
-				msg.request.order = "start";
+				msg.request.pattern_name = "turn_right_tripod";	
+				if(current_gp == alternating_tripod_right){
+					msg.request.order = "continue";
+				}else{
+					msg.request.order = "start";
+					current_gp = alternating_tripod_right;
+				}
+				
 				/*if(move_command_old == 0)
 				{
 					msg.request.pattern_name = "turn_right_tripod";
@@ -196,8 +211,13 @@ int main(int argc, char **argv)
 			else if(move_command == 2)
 			{
 				ROS_INFO("Turn left command");
-				msg.request.pattern_name = "turn_left_tripod";
-				msg.request.order = "start";
+				msg.request.pattern_name = "turn_left_tripod";	
+				if(current_gp == alternating_tripod_left){
+					msg.request.order = "continue";
+				}else{
+					msg.request.order = "start";
+					current_gp = alternating_tripod_left;
+				}
 				/*if(move_command_old == 0)
 				{
 					msg.request.pattern_name = "turn_left_tripod";
