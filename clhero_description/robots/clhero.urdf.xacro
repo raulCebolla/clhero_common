@@ -13,6 +13,8 @@
 <xacro:include filename="$(find clhero_description)/urdf/sensores/imu.xacro"/>
 <xacro:include filename="$(find clhero_description)/urdf/sensores/hokuyo_sensor.xacro"/-->
 
+<xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro"/>
+
 <!-- Declaracion del plugin gazebo_ros_control -->
 
 <gazebo>
@@ -62,5 +64,9 @@
 <!--hokuyo_sensor sensor_name="hokuyo" parent_name="base_link">
     <origin xyz="${300/1000} 0 0" rpy="0 0 0"/>
 </hokuyo_sensor-->
+
+<sensor_d435 parent="base_link">
+    <origin xyz="0.27 0 -0.01" rpy="0 0 0"/>
+</sensor_d435>
 
 </robot>
