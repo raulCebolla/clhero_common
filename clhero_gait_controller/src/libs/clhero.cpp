@@ -174,8 +174,8 @@ void clhero::handle_pattern_command_msg(const clhero_gait_controller::PatternCom
 		ROS_INFO("Received order: %s", msg->order.c_str());
 		#endif
 
-		//Changes the status to test
-		hex->status = test;
+		//Changes the status to active
+		hex->status = active;
 
 	}
 

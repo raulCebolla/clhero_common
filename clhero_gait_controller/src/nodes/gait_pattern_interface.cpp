@@ -353,7 +353,7 @@ int main(int argc, char **argv){
   //    ROS starting statements
   //----------------------------------------------------
 
-  ros::init(argc, argv, "test");
+  ros::init(argc, argv, "gait_pattern_interface");
   ros::NodeHandle nh;
 
   checkDebugMode(argc, argv);

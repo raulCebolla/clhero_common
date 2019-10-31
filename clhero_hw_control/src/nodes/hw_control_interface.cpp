@@ -32,7 +32,7 @@
 //    Defines
 //----------------------------------------------------
 
-#define LOOP_RATE 200 //Rate at which the node checks for callbacks
+#define LOOP_RATE 500 //Rate at which the node checks for callbacks
 #define LEG_NUMBER 6 //Number of legs of the robot
 #define CONTROL_RATE 100 //Rate which the node sends the control of each leg
 #define PI 3.14159265359
@@ -78,6 +78,9 @@ public:
 //Publisher of the legs_state_msg
 ros::Publisher legs_state_pub;
 ros::Publisher raw_state_pub;
+
+//State publisher for tf 
+ros::Publisher joint_state_pub;
 
 //Publisher of each of the command msgs
 std::vector<ros::Publisher> controller_command_pub;
@@ -139,12 +142,12 @@ inline bool checkNegativeMotor (int motor){
 //on the accumulate position of the motor
 double turnAbsolutePosition (double pos_command, double vel_command, double curr_position){
 
-	Stopwatch watch;
+	//Stopwatch watch;
 
 	long n = 0;
 	double fixed_command, diff, rel_curr_pos;
 
-	watch.start();
+	//watch.start();
 	//Gets the number of turns
 	n = floor(curr_position/(2*PI));
 
@@ -170,8 +173,8 @@ double turnAbsolutePosition (double pos_command, double vel_command, double curr
 
 	}
 	
-	watch.stop();
-	reg->write("turnAbsolutePosition", watch.get_interval());
+	//watch.stop();
+	//reg->write("turnAbsolutePosition", watch.get_interval());
 
 	return fixed_command;
 
@@ -188,13 +191,18 @@ void StateUpdateMethod (){
 	clhero_gait_controller::LegState leg_state_msg;
 	clhero_hw_control::RawState raw_state_msg;
 
+	//Joint state msgs
+	sensor_msgs::JointState joint_state_msg;
+	std::string joint_name;
+
 	double position, velocity, effort;
 	int n = 0;
 
-	std::vector<double> readings_reg;	
+	//std::vector<double> readings_reg;	
 
 	leg_state_msg.stamp = ros::Time::now();
 	raw_state_msg.stamp = leg_state_msg.stamp;	
+	joint_state_msg.header.stamp = leg_state_msg.stamp;
 
 	//For each leg
 	for(int i = 0; i < LEG_NUMBER; i++){
@@ -223,20 +231,29 @@ void StateUpdateMethod (){
 		raw_state_msg.pos.push_back(epos_f->GetRawPosition(mapMotor(i+1)));
 		raw_state_msg.vel.push_back(epos_f->GetRawVelocity(mapMotor(i+1)));
 		raw_state_msg.eff.push_back(epos_f->GetRawEffort(mapMotor(i+1)));
-		
 
+		//For legs state
+		joint_name = "motor_" + std::to_string(i+1) + "_to_base_link_joint";
+
+		joint_state_msg.name.push_back(joint_name);
+		joint_state_msg.position.push_back(position);
+		joint_state_msg.velocity.push_back(velocity);
+		joint_state_msg.effort.push_back(effort);
+		
+		/*
 		readings_reg.push_back((double)i);
 		readings_reg.push_back(position);
 		readings_reg.push_back(velocity);
 		readings_reg.push_back(effort);
-
-		s_reg->write(readings_reg);
-		readings_reg.clear();
+		*/
+		//s_reg->write(readings_reg);
+		//readings_reg.clear();
 	}
 
 	//Publishes the msg
 	legs_state_pub.publish(leg_state_msg);
 	raw_state_pub.publish(raw_state_msg);
+	joint_state_pub.publish(joint_state_msg);
 
 	return;
 }
@@ -249,14 +266,14 @@ void StateUpdateMethod (){
 //Callback for leg command msgs
 void legCommandCallback (const clhero_gait_controller::LegCommand::ConstPtr& msg){
 
-	Stopwatch watch;
+	//Stopwatch watch;
 
-	watch.start();
+	//watch.start();
 	com_man->evaluateNewCommand(msg);
 	com_man->commandAllMotors();
-	watch.stop();
+	//watch.stop();
 
-	reg->write("legCommandCallback", watch.get_interval());
+	//reg->write("legCommandCallback", watch.get_interval());
 
  	return;
 }
@@ -317,9 +334,9 @@ bool CommandMsgManager::checkNegativeMotor (int motor){
 
 void CommandMsgManager::fixNewCommand (){
 
-	Stopwatch watch, activate_profile_watch, set_profile_watch;
+	//Stopwatch watch, activate_profile_watch, set_profile_watch;
 
-	watch.start();
+	//watch.start();
 	//For each leg
 	for(int i=0; i<LEG_NUMBER; i++){
 		//If there is a new command to be treated
@@ -340,10 +357,10 @@ void CommandMsgManager::fixNewCommand (){
 				double abs_position;
 
 				//Activates the position mode
-				activate_profile_watch.start();
+				//activate_profile_watch.start();
 				this->epos->ActivateProfilePosition(mapMotor(i+1));
-				activate_profile_watch.stop();
-				reg->write("epos::ActivateProfilePosition", activate_profile_watch.get_interval());
+				//activate_profile_watch.stop();
+				//reg->write("epos::ActivateProfilePosition", activate_profile_watch.get_interval());
 				//Corrects the command if the motor is negative-turn
 				if(this->checkNegativeMotor(mapMotor(i+1))){
 					fixed_command.pos[i] = 2*PI - fixed_command.pos[i];
@@ -352,10 +369,10 @@ void CommandMsgManager::fixNewCommand (){
 				//Checks if a new profile shall be set
 				if(current_command.new_acel_profile[i].data){
 					//If so, uploads the acceleration and decceleration
-					set_profile_watch.start();
+					//set_profile_watch.start();
 					epos->SetPositionProfile(mapMotor(i+1), fabs(fixed_command.vel[i]), fixed_command.acel[i], fixed_command.decel[i]);
-					set_profile_watch.stop();
-					reg->write("epos::SetPositionProfile", set_profile_watch.get_interval());
+					//set_profile_watch.stop();
+					//reg->write("epos::SetPositionProfile", set_profile_watch.get_interval());
 				}
 
 				//Gets the absolute position based on the position command, velocity and current position
@@ -364,10 +381,10 @@ void CommandMsgManager::fixNewCommand (){
 				//Velocity command
 
 				//Activates the velocity profile
-				activate_profile_watch.start();
+				//activate_profile_watch.start();
 				this->epos->ActivateProfileVelocity(mapMotor(i+1));
-				activate_profile_watch.stop();
-				reg->write("ActivateProfileVelocity", activate_profile_watch.get_interval());
+				//activate_profile_watch.stop();
+				//reg->write("ActivateProfileVelocity", activate_profile_watch.get_interval());
 				//Corrects the command if the motor is negative-turn
 				if(this->checkNegativeMotor(mapMotor(i+1))){
 					fixed_command.pos[i] = 2*PI - fixed_command.pos[i];
@@ -376,17 +393,17 @@ void CommandMsgManager::fixNewCommand (){
 				//Checks if a new profile shall be set
 				if(current_command.new_acel_profile[i].data){
 					//If so, uploads the acceleration and decceleration
-					set_profile_watch.start();
+					//set_profile_watch.start();
 					this->epos->SetVelocityProfile(mapMotor(i+1), fixed_command.acel[i], fixed_command.decel[i]);
-					set_profile_watch.stop();
-					reg->write("SetVelocityProfile", set_profile_watch.get_interval());
+					//set_profile_watch.stop();
+					//reg->write("SetVelocityProfile", set_profile_watch.get_interval());
 				}
 			}
 		}
 	}
-	watch.stop();
+	//watch.stop();
 
-	reg->write("CommandMsgManager::fixNewCommand", watch.get_interval());
+	//reg->write("CommandMsgManager::fixNewCommand", watch.get_interval());
 
 	return;
 }
@@ -414,9 +431,9 @@ CommandMsgManager::CommandMsgManager(epos_functions* e){
 
 void CommandMsgManager::evaluateNewCommand(const clhero_gait_controller::LegCommand::ConstPtr& msg){
 	
-	Stopwatch watch;
+	//Stopwatch watch;
 
-	watch.start();
+	//watch.start();
 	for(int i=0; i<LEG_NUMBER; i++){
 
 		if(fabs(current_command.pos[i] - msg->pos[i]) > ERROR_THR){
@@ -462,9 +479,9 @@ void CommandMsgManager::evaluateNewCommand(const clhero_gait_controller::LegComm
 			current_command.position_command[i].data = msg->position_command[i].data;			
 		}
 	}
-	watch.stop();
+	//watch.stop();
 
-	reg->write("CommandMsgManager::evaluateNewCommand", watch.get_interval());
+	//reg->write("CommandMsgManager::evaluateNewCommand", watch.get_interval());
 
 	this->fixNewCommand();
 	return;
@@ -472,30 +489,30 @@ void CommandMsgManager::evaluateNewCommand(const clhero_gait_controller::LegComm
 
 void CommandMsgManager::commandAllMotors(){
 
-	Stopwatch watch, move_to_pos_watch, move_w_vel_watch;
+	//Stopwatch watch, move_to_pos_watch, move_w_vel_watch;
 
-	watch.start();
+	//watch.start();
 	for(int i=0; i<LEG_NUMBER; i++){
 		if(is_new_command[i]){
 			if(fixed_command.position_command[i].data){
 				//Position command
-				move_to_pos_watch.start();
+				//move_to_pos_watch.start();
 				this->epos->MoveToPosition(mapMotor(i+1), fixed_command.pos[i], true, true);
-				move_to_pos_watch.stop();
-				reg->write("epos::MoveToPosition", move_to_pos_watch.get_interval());
+				//move_to_pos_watch.stop();
+				//reg->write("epos::MoveToPosition", move_to_pos_watch.get_interval());
 			}else{
 				//Velocity command
-				move_w_vel_watch.start();
+				//move_w_vel_watch.start();
 				this->epos->MoveWithVelocity(mapMotor(i+1), fixed_command.vel[i]);
-				move_w_vel_watch.stop();
-				reg->write("epos::MoveWithVelocity", move_w_vel_watch.get_interval());
+				//move_w_vel_watch.stop();
+				//reg->write("epos::MoveWithVelocity", move_w_vel_watch.get_interval());
 			}
 		}
 		is_new_command[i] = false;
 	}
-	watch.stop();
+	//watch.stop();
 
-	reg->write("CommandMsgManager::commandAllMotors", watch.get_interval());
+	//reg->write("CommandMsgManager::commandAllMotors", watch.get_interval());
 
 	return;
 }
@@ -535,12 +552,13 @@ int main(int argc, char **argv){
   com_man = new CommandMsgManager(epos_f);
 
   //Publishers
-  legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 10);
-  raw_state_pub = nh.advertise<clhero_hw_control::RawState>("legs_raw_state", 10);
+  legs_state_pub = nh.advertise<clhero_gait_controller::LegState>("legs_state", 10000);
+  raw_state_pub = nh.advertise<clhero_hw_control::RawState>("legs_raw_state", 10000);
+  joint_state_pub = nh.advertise<sensor_msgs::JointState>("/joint_states", 10000);
   
   //Topics subscription
-  ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 100, legCommandCallback);
-  ros::Subscriber offset_sub = nh.subscribe("offset_setting", 100, offsetSettingCallback);
+  ros::Subscriber leg_command_sub = nh.subscribe("legs_command", 10000, legCommandCallback);
+  ros::Subscriber offset_sub = nh.subscribe("offset_setting", 10000, offsetSettingCallback);
 
   ros::ServiceServer get_errors_service = nh.advertiseService("get_motor_errors", get_errors_srv_callback);
 
