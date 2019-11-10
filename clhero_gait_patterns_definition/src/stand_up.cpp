@@ -33,7 +33,7 @@
 #define ANG_THR 0.12217304763960307
 #define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
 #define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
-#define REV_ANG_THR 5.235987755982989 // 300 [º]
+#define REV_ANG_THR 2.792526803190927 // 160 [º]
 #define STAND_UP_VEL 2
 
 //----------------------------------------------------
@@ -218,7 +218,7 @@ int main (int argc, char** argv){
 	//----------------------------------------------------
 
 	//attach the states set
-	clhr.attachState(1, stand_up_2_state, STARTING_STATE);
+	clhr.attachState(1, state_1, STARTING_STATE);
 
 	//----------------------------------------------------
 	//    Run

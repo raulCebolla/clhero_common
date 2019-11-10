@@ -26,10 +26,14 @@
 #define STATE_LOOP_RATE 200
 #define PATTERN_NAME "offset_setting"
 #define TEST_VEL 0.25
-#define EFF_THR 500
-#define RECOVER_VEL 3
+#define TEST_VEL_2 0.02
+#define EFF_THR 1000
+#define EFF_THR_2 750
+#define RECOVER_VEL 1
 #define REST_ANG 3.490658503988659 //[rads] = 200[º]
+#define START_ANG_2 2.0943951023931953 //[rads] = 120[º]
 #define MAX_TAKE_OFF_ANG 1.8104073438134423 //[rads] = 103.7287 [º]
+#define ANG_THR 0.03490658503988659 //[rads] = 2[º]
 
 #ifndef LEG_NUMBER
 #define LEG_NUMBER 6
@@ -102,7 +106,163 @@ void state_1 (clhero::Clhero_robot* clhr){
 			if(!is_offset_set[i]){
 				//If the effort surpases the effort threshold
 				if(effort[i] < (-1.0)*EFF_THR){
-					ROS_INFO("Leg %d in position");
+					ROS_INFO("Leg %d in position",i+1);
+					//Halts the movement
+					clhr->setLegVelocity(i+1, 0);
+					clhr->sendCommands();
+					//Prepares the msg
+					offset_msg.id.push_back(i+1);
+					offset_msg.actual_pos.push_back(MAX_TAKE_OFF_ANG);
+					//Mark this leg as set
+					is_offset_set[i] = true;
+					//Mark that the msg shall be sent
+					is_new_msg = true;
+				}
+			}
+		}
+
+		//If a msg shall be sent
+		if(is_new_msg){
+			//Sends the msg
+			offset_pub.publish(offset_msg);
+			is_new_msg = false;
+
+			//Clears the msg
+			offset_msg.id.clear();
+			offset_msg.actual_pos.clear();
+		}
+
+		//Counts the number of legs set
+		for(int i=0; i<is_offset_set.size(); i++){
+			if(is_offset_set[i]){
+				legs_set++;
+			}
+		}
+
+		//If all the legs are set, transition to the next state
+		if(legs_set >= LEG_NUMBER){
+			ROS_INFO("[Offset_setting] First offsets configured.");
+			clhr->transition(2);
+		}else{
+			legs_set = 0;
+		}
+
+		loop_rate.sleep();
+	}
+
+	return;
+}
+
+//Estado 2
+void state_2 (clhero::Clhero_robot* clhr){
+
+	//------------------------------------------------
+	// State's loop rate
+	//------------------------------------------------
+
+	ros::Rate loop_rate(100);
+
+	//------------------------------------------------
+	// State's initial statement
+	//------------------------------------------------
+
+	//As for example
+	for(int i=0; i<LEG_NUMBER; i++){
+		clhr->setLegPosition(i+1, START_ANG_2, RECOVER_VEL);
+	}
+
+	clhr->sendCommands();
+
+	int legs_in_position = 0;
+	std::vector<float> position;
+
+	//------------------------------------------------
+	// State's core loop
+	//------------------------------------------------
+
+	while(clhr->activeState() == 2){
+
+		//--------------------------------------------
+		// State's transition checking
+		//--------------------------------------------
+
+		//Here the state shall check for transitions
+		//in case the conditions for a transition are
+		//met, this shall be done by:
+		//	clhr->transition(new_state_id);
+
+		position = clhr->getLegsPosition();
+
+		for(int i = 0; i < LEG_NUMBER; i++){
+			if(fabs(position[i] - START_ANG_2) < ANG_THR){
+				legs_in_position++;
+			}
+		}
+
+		if(legs_in_position == LEG_NUMBER){
+			clhr->transition(3);
+		}else{
+			legs_in_position = 0;
+		}
+
+		loop_rate.sleep();
+	}
+
+	return;
+}
+
+//Estado 3
+void state_3 (clhero::Clhero_robot* clhr){
+
+	//------------------------------------------------
+	// State's loop rate
+	//------------------------------------------------
+
+	ros::Rate loop_rate(STATE_LOOP_RATE);
+
+	//------------------------------------------------
+	// State's initial statement
+	//------------------------------------------------
+
+	//Flags indicating which of the legs have already been set the offset
+	std::vector<bool> is_offset_set (LEG_NUMBER, false);
+
+	//Vector with the current effort on each leg
+	std::vector<float> effort;
+
+	//Flags to indicate if an offset msg shall be sent
+	bool is_new_msg = false;
+
+	//Number of legs in position
+	unsigned int legs_set = 0;
+
+	//Offset setting msg
+	clhero_gait_controller::OffsetSetting offset_msg;
+
+	//Set backwards movement on each leg
+	for(int i = 0; i < LEG_NUMBER; i++){
+		clhr->setLegVelocity(i+1, (-1.0)*TEST_VEL_2);
+	}
+
+	clhr->sendCommands();
+
+	//------------------------------------------------
+	// State's core loop
+	//------------------------------------------------
+
+	while(clhr->activeState() == 3){
+
+		//Reads the efforts
+		effort = clhr->getLegsEffort();		
+
+		//For each of the legs
+		for(int i=0; i < LEG_NUMBER; i++){
+
+			//If this leg has not set the offset yet
+			if(!is_offset_set[i]){
+				//If the effort surpases the effort threshold
+				if(effort[i] < (-1.0)*EFF_THR_2){
+					ROS_INFO("Leg %d in position",i+1);
 					//Halts the movement
 					clhr->setLegVelocity(i+1, 0);
 					clhr->sendCommands();
@@ -138,7 +298,7 @@ void state_1 (clhero::Clhero_robot* clhr){
 		//If all the legs are set, transition to the next state
 		if(legs_set >= LEG_NUMBER){
 			ROS_INFO("[Offset_setting] All offsets configured.");
-			clhr->transition(2);
+			clhr->transition(4);
 		}else{
 			legs_set = 0;
 		}
@@ -149,8 +309,8 @@ void state_1 (clhero::Clhero_robot* clhr){
 	return;
 }
 
-//Estado 2
-void state_2 (clhero::Clhero_robot* clhr){
+//Estado 4
+void state_4 (clhero::Clhero_robot* clhr){
 
 	//------------------------------------------------
 	// State's loop rate
@@ -173,7 +333,7 @@ void state_2 (clhero::Clhero_robot* clhr){
 	// State's core loop
 	//------------------------------------------------
 
-	while(clhr->activeState() == 2){
+	while(clhr->activeState() == 4){
 
 		//--------------------------------------------
 		// State's transition checking
@@ -228,6 +388,8 @@ int main (int argc, char** argv){
 	//attach the states set
 	clhr.attachState(1, state_1, STARTING_STATE);
 	clhr.attachState(2, state_2);
+	clhr.attachState(3, state_3);
+	clhr.attachState(4, state_4);
 
 	//----------------------------------------------------
 	//    Run

@@ -189,7 +189,7 @@ void StateUpdateMethod (){
 
 	//Leg State msg
 	clhero_gait_controller::LegState leg_state_msg;
-	clhero_hw_control::RawState raw_state_msg;
+	//clhero_hw_control::RawState raw_state_msg;
 
 	//Joint state msgs
 	sensor_msgs::JointState joint_state_msg;
@@ -201,7 +201,7 @@ void StateUpdateMethod (){
 	//std::vector<double> readings_reg;	
 
 	leg_state_msg.stamp = ros::Time::now();
-	raw_state_msg.stamp = leg_state_msg.stamp;	
+	//raw_state_msg.stamp = leg_state_msg.stamp;	
 	joint_state_msg.header.stamp = leg_state_msg.stamp;
 
 	//For each leg
@@ -227,10 +227,11 @@ void StateUpdateMethod (){
 		leg_state_msg.vel.push_back(velocity);
 		leg_state_msg.torq.push_back(effort);
 
-		
+		/*
 		raw_state_msg.pos.push_back(epos_f->GetRawPosition(mapMotor(i+1)));
 		raw_state_msg.vel.push_back(epos_f->GetRawVelocity(mapMotor(i+1)));
 		raw_state_msg.eff.push_back(epos_f->GetRawEffort(mapMotor(i+1)));
+		*/
 
 		//For legs state
 		joint_name = "motor_" + std::to_string(i+1) + "_to_base_link_joint";
@@ -252,7 +253,7 @@ void StateUpdateMethod (){
 
 	//Publishes the msg
 	legs_state_pub.publish(leg_state_msg);
-	raw_state_pub.publish(raw_state_msg);
+	//raw_state_pub.publish(raw_state_msg);
 	joint_state_pub.publish(joint_state_msg);
 
 	return;
@@ -538,6 +539,8 @@ int main(int argc, char **argv){
   s_reg = new ChronoRegister;
   s_reg->set_path("/home/hexapodo/clhero_state_results");  
 
+  Stopwatch loop_watch, state_watch, callback_watch;
+
   //Creates the maxon motors'handler
   epos_f = new epos_functions();
 
@@ -569,9 +572,22 @@ int main(int argc, char **argv){
   //ros::waitForShutdown();
 
   while(ros::ok()){
-  	ros::spinOnce();
+  	loop_watch.start();
+  	
+ 	state_watch.start();
   	StateUpdateMethod();
-  	loop_rate.sleep();
+  	state_watch.stop();
+
+  	callback_watch.start();
+  	ros::spinOnce();
+  	callback_watch.stop();
+
+  	loop_watch.stop();
+
+  	reg->write("Loop:", loop_watch.get_interval());
+  	reg->write("callback:", callback_watch.get_interval());
+  	reg->write("state:", state_watch.get_interval());
+  	//loop_rate.sleep();
   }
 
   epos_f->closeAllDevices();

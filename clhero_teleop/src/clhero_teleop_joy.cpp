@@ -26,7 +26,7 @@
 //    Defines
 //----------------------------------------------------
 
-enum Gait_pattern {none, alternating_tripod, alternating_tripod_left, alternating_tripod_right};
+enum Gait_pattern {none, alternating_tripod, alternating_tripod_left, alternating_tripod_right, stand_up, lay_down, offset};
 
 //----------------------------------------------------
 //    Global Variables
@@ -249,6 +249,7 @@ int main(int argc, char **argv)
 				ROS_INFO("Stand UP");
 				msg.request.pattern_name = "stand_up";
 				msg.request.order = "start";
+				current_gp = stand_up;
 			}
 
 			// Get down
@@ -256,10 +257,12 @@ int main(int argc, char **argv)
 				ROS_INFO("lay Down");
 				msg.request.pattern_name = "lay_down";
 				msg.request.order = "start";
+				current_gp = lay_down;
 			}else if(move_command == 70){
 				ROS_INFO("Offset setting");
 				msg.request.pattern_name="offset_setting";
 				msg.request.order = "start";
+				current_gp = offset;
 			}else{
 				ROS_INFO("Stop command");
 				msg.request.order = "stop";

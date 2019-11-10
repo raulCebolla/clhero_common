@@ -24,16 +24,16 @@
 #define STATE_LOOP_RATE 100
 #define PATTERN_NAME "alternating_tripod"
 #define PI 3.14159265359
-#define GROUND_ANGLE 1.0471975511965976 // 60 [º]
+#define GROUND_ANGLE 1.0471975511965976 // 60 [º] (std = 60º)
 #define AIR_ANGLE (2*PI - GROUND_ANGLE)
-#define GROUND_VELOCITY (3.141592653589793/2.5) // aprox 30 [rpm]
-#define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
+#define GROUND_VELOCITY (1) // aprox 30 [rpm] (std = 1 rad/s)
+#define AIR_VELOCITY (5) // (max = 6 rad/s)
 #define LEG_NUMBER 6
 #define ANG_THR 0.17453292519943295 // 10[º]
 #define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
 #define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
 #define STAND_UP_VEL 2 
-#define REV_ANG_THR PI// 300 [º]
+#define REV_ANG_THR 2.792526803190927// 160 [º]
 
 //----------------------------------------------------
 //    Global Variables
