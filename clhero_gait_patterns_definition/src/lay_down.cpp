@@ -24,16 +24,9 @@
 #define STATE_LOOP_RATE 200
 #define PATTERN_NAME "lay_down"
 #define PI 3.14159265359
-#define GROUND_ANGLE (1.5707963267948966) // 60 [º]
-#define AIR_ANGLE (2*PI-GROUND_ANGLE)
-#define GROUND_VELOCITY 3 // aprox 30 [rpm]
-#define DEFAULT_VEL 1.25 //[rad/s]
-#define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
 #define LEG_NUMBER 6
 #define ANG_THR 0.12217304763960307
-#define LANDING_ANG (2*PI-GROUND_ANGLE/2.0)
-#define TAKE_OFF_ANG (GROUND_ANGLE/2.0)
-#define TEST_VEL 1.5
+#define DEFAULT_VEL 1.5
 #define REST_ANG 3.490658503988659 //[rads] = 200[º]
 
 //----------------------------------------------------
@@ -41,11 +34,27 @@
 //----------------------------------------------------
 
 const std::vector<int> all_legs = {1, 2, 3, 4, 5, 6};
+std::unordered_map<std::string,double> movement_parameters;
 
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
 
+//Function that updates the parameters
+std::unordered_map<std::string, double> update_movement_parameters(std::map<std::string,std::string> args){
+
+	//Gets each of the parameters
+	
+	//Velocity
+	try{
+		movement_parameters["velocity"] = std::stod(args.at("velocity"));
+	}catch(std::out_of_range& oor){
+		movement_parameters["velocity"] = DEFAULT_VEL;
+	}
+
+	return movement_parameters;
+
+}
 
 //----------------------------------------------------
 //    States
@@ -73,6 +82,9 @@ void state_1 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
+	update_movement_parameters(clhr->getArgs());
+	const double movement_velocity = movement_parameters["velocity"];
+
 	state = clhr->getLegsPosition();
 
 	for(int i=0; i < LEG_NUMBER; i++){
@@ -85,7 +97,7 @@ void state_1 (clhero::Clhero_robot* clhr){
 		
 	}else{
 		legs_in_position = 0;
-		clhr->setLegPosition(all_legs, REST_ANG, (-1.0)*DEFAULT_VEL);
+		clhr->setLegPosition(all_legs, REST_ANG, (-1.0)*movement_velocity);
 		clhr->sendCommands();
 	}
 

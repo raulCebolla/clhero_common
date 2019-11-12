@@ -14,6 +14,8 @@
 #include <clhero_gait_controller/clhero.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <stdexcept>
 
 //----------------------------------------------------
 //    Defines
@@ -22,18 +24,19 @@
 //Declare the defines needed in the gait pattern
 
 #define STATE_LOOP_RATE 100
-#define PATTERN_NAME "turn_left_tripod"
+#define PATTERN_NAME "open_loop_alternating_tripod"
 #define PI 3.14159265359
 #define GROUND_ANGLE 1.0471975511965976 // 60 [º] (std = 60º)
-#define AIR_ANGLE (2*PI-GROUND_ANGLE)
+#define AIR_ANGLE (2*PI - GROUND_ANGLE)
 #define GROUND_VELOCITY (1) // aprox 30 [rpm] (std = 1 rad/s)
 #define AIR_VELOCITY (5) // (max = 6 rad/s)
 #define LEG_NUMBER 6
-#define ANG_THR 0.12217304763960307
-#define STAND_UP_VEL 3
-#define REV_ANG_THR PI // 300 [º]
+#define ANG_THR 0.17453292519943295 // 10[º]
+#define STAND_UP_VEL 2 
+#define REV_ANG_THR 2.792526803190927// 160 [º]
 #define MAX_GROUND_ANGLE 3.6208146876268845 // 2*max_take_off_angle
-#define MAX_VEL 6 
+#define MAX_VEL 6.0
+#define TIME_CORRECTION_FACTOR 1.2
 
 //----------------------------------------------------
 //    Global Variables
@@ -51,6 +54,15 @@ std::unordered_map<std::string, double> movement_parameters;
 //    Functions
 //----------------------------------------------------
 
+std::unordered_map<std::string,double> set_default_movement_parameters(){
+	movement_parameters["ground_angle"] = GROUND_ANGLE;
+	movement_parameters["air_angle"] = 2*PI - movement_parameters["ground_angle"];
+	movement_parameters["ground_velocity"] = GROUND_VELOCITY;
+	movement_parameters["air_velocity"] = movement_parameters["air_angle"]/movement_parameters["ground_angle"] * movement_parameters["ground_velocity"];
+	movement_parameters["stand_up_velocity"] = STAND_UP_VEL;
+	return movement_parameters;
+}
+
 //Function that updates the parameters
 std::unordered_map<std::string, double> update_movement_parameters(std::map<std::string,std::string> args){
 
@@ -63,13 +75,11 @@ std::unordered_map<std::string, double> update_movement_parameters(std::map<std:
 
 		//checks that the value is inside its limits
 		if(movement_parameters["ground_angle"] > MAX_GROUND_ANGLE){
-			ROS_INFO("[alternating_tripod_turn_left]: Ground angle value exceeded, setting to: %f", MAX_GROUND_ANGLE);
+			ROS_INFO("[alternating_tripod]: Ground angle value exceeded, setting to: %f", MAX_GROUND_ANGLE);
 			movement_parameters["ground_angle"] = MAX_GROUND_ANGLE;
 		}
 
-	}catch(std::out_of_range& oor){
-		movement_parameters["ground_angle"] = GROUND_ANGLE;
-	}
+	}catch(std::out_of_range& oor){}
 
 	//Air angle
 
@@ -79,12 +89,10 @@ std::unordered_map<std::string, double> update_movement_parameters(std::map<std:
 	//Ground velocity
 	try{
 		movement_parameters["ground_velocity"] = std::stod(args.at("ground_velocity"));
-	}catch(std::out_of_range& oor){
-		movement_parameters["ground_velocity"] = GROUND_VELOCITY;
-	}
+	}catch(std::out_of_range& oor){}
 
 	if(movement_parameters["ground_velocity"] > MAX_VEL){
-		ROS_INFO("[alternating_tripod_turn_left]: Ground velocity exceeded, setting to: %f", MAX_VEL);
+		ROS_INFO("[alternating_tripod]: Ground velocity exceeded, setting to: %f", MAX_VEL);
 		movement_parameters["ground_velocity"] = MAX_VEL;
 	}
 
@@ -93,20 +101,19 @@ std::unordered_map<std::string, double> update_movement_parameters(std::map<std:
 
 	//If the air velocity is exceeded, sets to its maximum
 	if(movement_parameters["air_velocity"] > MAX_VEL){
-		ROS_INFO("[alternating_tripod_turn_left]: Air value exceeded, setting to: %f", MAX_VEL);
+		ROS_INFO("[alternating_tripod]: Air value exceeded, setting to: %f", MAX_VEL);
 		movement_parameters["air_velocity"] = MAX_VEL;
 	} 
 
 	//Stand up velocity
 	try{
 		movement_parameters["stand_up_velocity"] = std::stod(args.at("stand_up_velocity"));
-	}catch(std::out_of_range& oor){
-		movement_parameters["stand_up_velocity"] = STAND_UP_VEL;
-	}
+	}catch(std::out_of_range& oor){	}
 
 	return movement_parameters;
 
 }
+
 //----------------------------------------------------
 //    States
 //----------------------------------------------------
@@ -125,17 +132,13 @@ void state_1 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
-	ROS_INFO("[Alternating tripod turn left]: Entered state 1");
+	ROS_INFO("[Alternating tripod]: Entered state 1");
+
+	update_movement_parameters(clhr->getArgs());
 
 	std::vector<float> state;
 	int legs_in_position = 0;
-
-	update_movement_parameters(clhr->getArgs());
 	const double stand_up_vel = movement_parameters["stand_up_velocity"];
-	const double ang_l1 = 2*PI - movement_parameters["ground_angle"]/2;
-	const double ang_l2 = movement_parameters["ground_angle"]/2;
-	const double ground_velocity = movement_parameters["ground_velocity"];
-	const double air_velocity = movement_parameters["air_velocity"];
 
 	//Check if it's already in position
 	state = clhr->getLegsPosition();
@@ -210,8 +213,8 @@ void stand_up_2_state (clhero::Clhero_robot* clhr){
 
 	update_movement_parameters(clhr->getArgs());
 	const double stand_up_vel = movement_parameters["stand_up_velocity"];
-	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
-	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double landing_pos = 2*PI - movement_parameters["ground_angle"]/2;
+	const double take_off_pos = movement_parameters["ground_angle"]/2;
 	const double ground_velocity = movement_parameters["ground_velocity"];
 	const double air_velocity = movement_parameters["air_velocity"];
 
@@ -274,7 +277,6 @@ void stand_up_2_state (clhero::Clhero_robot* clhr){
 }
 
 //Estado 2
-//sets the second tripod into an air state
 void state_2 (clhero::Clhero_robot* clhr){
 
 	//------------------------------------------------
@@ -287,21 +289,31 @@ void state_2 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
-	ROS_INFO("[Alternating tripod turn left]: Entered state 2");
+	ROS_INFO("[Alternating tripod]: Entered state 2");
 
 	std::vector<float> state;
 	int legs_in_position = 0;
 
 	update_movement_parameters(clhr->getArgs());
 	const double stand_up_vel = movement_parameters["stand_up_velocity"];
-	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
-	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double landing_pos = 2*PI - movement_parameters["ground_angle"]/2;
+	const double take_off_pos = movement_parameters["ground_angle"]/2;
 	const double ground_velocity = movement_parameters["ground_velocity"];
 	const double air_velocity = movement_parameters["air_velocity"];
 
-	//clhr->setLegPosition(tripod_1, 0, GROUND_VELOCITY);
-	clhr->setLegPosition(tripod_2, PI, (2)*stand_up_vel);
+	/*for(int i=0; i < tripod_1.size(); i++){
+		clhr->setLegPosition(tripod_1[i], TAKE_OFF_ANG, GROUND_VELOCITY);
+	}*/
 
+	clhr->setLegPosition(tripod_1, take_off_pos, ground_velocity);
+
+	/*for(int i=0; i < tripod_2.size(); i++){
+		clhr->setLegPosition(tripod_2[i], LANDING_ANG, (-1.0)*GROUND_VELOCITY);
+	}*/
+
+	clhr->setLegPosition(tripod_2, landing_pos, (-2)*ground_velocity);
+
+	//Sends all the commands
 	clhr->sendCommands();
 
 	//------------------------------------------------
@@ -322,13 +334,13 @@ void state_2 (clhero::Clhero_robot* clhr){
 		state = clhr->getLegsPosition();
 
 		for(int i=0; i < tripod_1.size(); i++){
-			if((fabs(state[tripod_1[i]-1] - 0) < ANG_THR) || (fabs(state[tripod_1[i]-1] - (2*PI)) < ANG_THR)){
+			if((fabs(state[tripod_1[i]-1] - take_off_pos) < ANG_THR)){
 				legs_in_position++;
 			}
 		}
 
 		for(int i=0; i < tripod_2.size(); i++){
-			if((fabs(state[tripod_2[i]-1] - (PI)) < ANG_THR)){				
+			if((fabs(state[tripod_2[i]-1] - landing_pos) < ANG_THR)){
 				legs_in_position++;
 			}
 		}
@@ -358,39 +370,27 @@ void state_3 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
-	ROS_INFO("[Alternating tripod turn left]: Entered state 3");
+	ROS_INFO("[Alternating tripod]: Entered state 3");
 
 	std::vector<float> state;
 	int legs_in_position = 0;
 
+	double time_in_state = 0.0;
+
 	update_movement_parameters(clhr->getArgs());
 	const double stand_up_vel = movement_parameters["stand_up_velocity"];
-	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
-	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double landing_pos = 2*PI - movement_parameters["ground_angle"]/2;
+	const double take_off_pos = movement_parameters["ground_angle"]/2;
 	const double ground_velocity = movement_parameters["ground_velocity"];
 	const double air_velocity = movement_parameters["air_velocity"];
 
-	for(int i=0; i < tripod_1.size(); i++){
-		if((tripod_1[i]%2) > 0){
-			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_1[i], ang_l2, (-1.0)*ground_velocity);
-		}else{
-			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_1[i], ang_l1, ground_velocity);
-		}
-	}
+	const double transition_time = TIME_CORRECTION_FACTOR * movement_parameters["ground_angle"] / movement_parameters["ground_velocity"];
 
-	for(int i=0; i < tripod_2.size(); i++){
-		if((tripod_2[i]%2) > 0){
-			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_2[i], ang_l1, (-1.0)*air_velocity);
-		}else{
-			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_2[i], ang_l2, air_velocity);
-		}
-	}
-
+	clhr->setLegPosition(tripod_1, landing_pos, air_velocity);
+	clhr->setLegPosition(tripod_2, take_off_pos, ground_velocity);
 	clhr->sendCommands();
+
+	const ros::Time command_time = ros::Time::now(); 
 
 	//------------------------------------------------
 	// State's core loop
@@ -407,43 +407,14 @@ void state_3 (clhero::Clhero_robot* clhr){
 		//met, this shall be done by:
 		//	clhr->transition(new_state_id);
 
-		state = clhr->getLegsPosition();
-
-		for(int i=0; i < tripod_1.size(); i++){
-			if((tripod_1[i]%2) > 0){
-				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_1[i]-1] - ang_l2) < ANG_THR)){
-					legs_in_position++;
-				}
-			}else{
-				//If the leg is even (right side leg)
-				if((fabs(state[tripod_1[i]-1] - ang_l1) < ANG_THR)){
-					legs_in_position++;
-				}
-			}
-		}
-
-		for(int i=0; i < tripod_2.size(); i++){
-			if((tripod_2[i]%2) > 0){
-				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_2[i]-1] - ang_l1) < ANG_THR)){
-					legs_in_position++;
-				}
-			}else{
-				//If the leg is even (right side leg)
-				if((fabs(state[tripod_2[i]-1] - ang_l2) < ANG_THR)){
-					legs_in_position++;
-				}
-			}
-		}
-
-		if(legs_in_position == LEG_NUMBER){
-			clhr->transition(4);
-		}else{
-			legs_in_position = 0;
-		}
-
 		loop_rate.sleep();
+
+		time_in_state = (ros::Time::now() - command_time).toSec();
+		
+		if(time_in_state >= transition_time){
+			clhr->transition(4);	
+		}
+
 	}
 
 	return;
@@ -462,39 +433,27 @@ void state_4 (clhero::Clhero_robot* clhr){
 	// State's initial statement
 	//------------------------------------------------
 
-	ROS_INFO("[Alternating tripod turn left]: Entered state 4");
+	ROS_INFO("[Alternating tripod]: Entered state 4");
 
 	std::vector<float> state;
 	int legs_in_position = 0;
 
+	double time_in_state = 0.0;
+
 	update_movement_parameters(clhr->getArgs());
 	const double stand_up_vel = movement_parameters["stand_up_velocity"];
-	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
-	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double landing_pos = 2*PI - movement_parameters["ground_angle"]/2;
+	const double take_off_pos = movement_parameters["ground_angle"]/2;
 	const double ground_velocity = movement_parameters["ground_velocity"];
 	const double air_velocity = movement_parameters["air_velocity"];
 
-	for(int i=0; i < tripod_1.size(); i++){
-		if((tripod_1[i]%2) > 0){
-			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_1[i], ang_l1, (-1.0)*air_velocity);
-		}else{
-			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_1[i], ang_l2, air_velocity);
-		}
-	}
+	const double transition_time = TIME_CORRECTION_FACTOR * movement_parameters["ground_angle"] / movement_parameters["ground_velocity"];
 
-	for(int i=0; i < tripod_2.size(); i++){
-		if((tripod_2[i]%2) > 0){
-			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_2[i], ang_l2, (-1.0)*ground_velocity);
-		}else{
-			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_2[i], ang_l1, ground_velocity);
-		}
-	}
-
+	clhr->setLegPosition(tripod_1, take_off_pos, ground_velocity);
+	clhr->setLegPosition(tripod_2, landing_pos, air_velocity);
 	clhr->sendCommands();
+
+	const ros::Time command_time = ros::Time::now(); 
 
 	//------------------------------------------------
 	// State's core loop
@@ -511,43 +470,13 @@ void state_4 (clhero::Clhero_robot* clhr){
 		//met, this shall be done by:
 		//	clhr->transition(new_state_id);
 
-		state = clhr->getLegsPosition();
-
-		for(int i=0; i < tripod_1.size(); i++){
-			if((tripod_1[i]%2) > 0){
-				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_1[i]-1] - ang_l1) < ANG_THR)){
-					legs_in_position++;
-				}
-			}else{
-				//If the leg is even (right side leg)
-				if((fabs(state[tripod_1[i]-1] - ang_l2) < ANG_THR)){
-					legs_in_position++;
-				}
-			}
-		}
-
-		for(int i=0; i < tripod_2.size(); i++){
-			if((tripod_2[i]%2) > 0){
-				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_2[i]-1] - ang_l2) < ANG_THR)){
-					legs_in_position++;
-				}
-			}else{
-				//If the leg is even (right side leg)
-				if((fabs(state[tripod_2[i]-1] - ang_l1) < ANG_THR)){
-					legs_in_position++;
-				}
-			}
-		}
-
-		if(legs_in_position == LEG_NUMBER){
-			clhr->transition(3);
-		}else{
-			legs_in_position = 0;
-		}
-
 		loop_rate.sleep();
+
+		time_in_state = (ros::Time::now() - command_time).toSec();
+		
+		if(time_in_state >= transition_time){
+			clhr->transition(3);	
+		}
 	}
 
 	return;
@@ -579,7 +508,11 @@ int main (int argc, char** argv){
 	//Register the new gait pattern
 	clhero::registerGaitPattern(pattern_name);
 
+	//Sets the buffer option for the msgs
 	clhr.bufferCommands(true);
+
+	//Set the default movement parameters
+	set_default_movement_parameters();
 
 	//----------------------------------------------------
 	//    State's instantiation

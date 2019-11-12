@@ -24,16 +24,16 @@
 #define STATE_LOOP_RATE 100
 #define PATTERN_NAME "turn_right_tripod"
 #define PI 3.14159265359
-#define GROUND_ANGLE (0.3490658503988659) // 20 [º]
+#define GROUND_ANGLE 1.0471975511965976 // 60 [º] (std = 60º)
 #define AIR_ANGLE (2*PI-GROUND_ANGLE)
-#define GROUND_VELOCITY (3/3) // aprox 30 [rpm]
-#define AIR_VELOCITY (AIR_ANGLE/GROUND_ANGLE*GROUND_VELOCITY)
+#define GROUND_VELOCITY (1) // aprox 30 [rpm] (std = 1 rad/s)
+#define AIR_VELOCITY (5) // (max = 6 rad/s)
 #define LEG_NUMBER 6
 #define ANG_THR 0.12217304763960307
-#define ANG_L2 (2*PI-GROUND_ANGLE/2.0)
-#define ANG_L1 (GROUND_ANGLE/2.0)
 #define STAND_UP_VEL 3
 #define REV_ANG_THR PI // 300 [º]
+#define MAX_GROUND_ANGLE 3.6208146876268845 // 2*max_take_off_angle
+#define MAX_VEL 6 
 
 //----------------------------------------------------
 //    Global Variables
@@ -44,10 +44,69 @@ const std::vector<int> tripod_1 = {1, 4, 5};
 const std::vector<int> tripod_2 = {2, 3, 6};
 const std::vector<int> all_legs = {1, 2, 3, 4, 5, 6};
 
+//Movement Parameters
+std::unordered_map<std::string, double> movement_parameters;
+
 //----------------------------------------------------
 //    Functions
 //----------------------------------------------------
 
+//Function that updates the parameters
+std::unordered_map<std::string, double> update_movement_parameters(std::map<std::string,std::string> args){
+
+	//Gets each of the parameters
+	
+	//Ground angle
+	try{
+
+		movement_parameters["ground_angle"] = std::stod(args.at("ground_angle"));
+
+		//checks that the value is inside its limits
+		if(movement_parameters["ground_angle"] > MAX_GROUND_ANGLE){
+			ROS_INFO("[alternating_tripod_turn_right]: Ground angle value exceeded, setting to: %f", MAX_GROUND_ANGLE);
+			movement_parameters["ground_angle"] = MAX_GROUND_ANGLE;
+		}
+
+	}catch(std::out_of_range& oor){
+		movement_parameters["ground_angle"] = GROUND_ANGLE;
+	}
+
+	//Air angle
+
+	//Due to geometry constraints
+	movement_parameters["air_angle"] = 2*PI - movement_parameters["ground_angle"];
+
+	//Ground velocity
+	try{
+		movement_parameters["ground_velocity"] = std::stod(args.at("ground_velocity"));
+	}catch(std::out_of_range& oor){
+		movement_parameters["ground_velocity"] = GROUND_VELOCITY;
+	}
+
+	if(movement_parameters["ground_velocity"] > MAX_VEL){
+		ROS_INFO("[alternating_tripod_turn_right]: Ground velocity exceeded, setting to: %f", MAX_VEL);
+		movement_parameters["ground_velocity"] = MAX_VEL;
+	}
+
+	//Air velocity
+	movement_parameters["air_velocity"] = movement_parameters["air_angle"]/movement_parameters["ground_angle"] * movement_parameters["ground_velocity"];
+
+	//If the air velocity is exceeded, sets to its maximum
+	if(movement_parameters["air_velocity"] > MAX_VEL){
+		ROS_INFO("[alternating_tripod_turn_right]: Air value exceeded, setting to: %f", MAX_VEL);
+		movement_parameters["air_velocity"] = MAX_VEL;
+	} 
+
+	//Stand up velocity
+	try{
+		movement_parameters["stand_up_velocity"] = std::stod(args.at("stand_up_velocity"));
+	}catch(std::out_of_range& oor){
+		movement_parameters["stand_up_velocity"] = STAND_UP_VEL;
+	}
+
+	return movement_parameters;
+
+}
 
 //----------------------------------------------------
 //    States
@@ -72,6 +131,13 @@ void state_1 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
+	update_movement_parameters(clhr->getArgs());
+	const double stand_up_vel = movement_parameters["stand_up_velocity"];
+	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
+	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double ground_velocity = movement_parameters["ground_velocity"];
+	const double air_velocity = movement_parameters["air_velocity"];
+
 	//Check if it's already in position
 	state = clhr->getLegsPosition();
 
@@ -85,7 +151,7 @@ void state_1 (clhero::Clhero_robot* clhr){
 		clhr->transition(2);
 	}else{
 		legs_in_position = 0;
-		clhr->setLegPosition(all_legs, 0, STAND_UP_VEL);
+		clhr->setLegPosition(all_legs, 0, stand_up_vel);
 		clhr->sendCommands();
 	}
 
@@ -143,6 +209,13 @@ void stand_up_2_state (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
+	update_movement_parameters(clhr->getArgs());
+	const double stand_up_vel = movement_parameters["stand_up_velocity"];
+	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
+	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double ground_velocity = movement_parameters["ground_velocity"];
+	const double air_velocity = movement_parameters["air_velocity"];
+
 	//Check if it's already in position
 	state = clhr->getLegsPosition();
 
@@ -158,9 +231,9 @@ void stand_up_2_state (clhero::Clhero_robot* clhr){
 		legs_in_position = 0;
 		for(int i=0; i<LEG_NUMBER; i++){
 			if(state[i] > REV_ANG_THR){
-				clhr->setLegPosition(i+1, 0, STAND_UP_VEL); 			
+				clhr->setLegPosition(i+1, 0, stand_up_vel); 			
 			}else{
-				clhr->setLegPosition(i+1, 0, (-0.8)*STAND_UP_VEL);
+				clhr->setLegPosition(i+1, 0, (-0.8)*stand_up_vel);
 			}
 		}
 		clhr->sendCommands();
@@ -221,7 +294,14 @@ void state_2 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
-	clhr->setLegPosition(tripod_2, PI, (1.5)*STAND_UP_VEL);
+	update_movement_parameters(clhr->getArgs());
+	const double stand_up_vel = movement_parameters["stand_up_velocity"];
+	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
+	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double ground_velocity = movement_parameters["ground_velocity"];
+	const double air_velocity = movement_parameters["air_velocity"];
+
+	clhr->setLegPosition(tripod_2, PI, (1.5)*stand_up_vel);
 
 	clhr->sendCommands();
 
@@ -284,23 +364,30 @@ void state_3 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
+	update_movement_parameters(clhr->getArgs());
+	const double stand_up_vel = movement_parameters["stand_up_velocity"];
+	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
+	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double ground_velocity = movement_parameters["ground_velocity"];
+	const double air_velocity = movement_parameters["air_velocity"];
+
 	for(int i=0; i < tripod_1.size(); i++){
 		if((tripod_1[i]%2) > 0){
 			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_1[i], ANG_L1, GROUND_VELOCITY);
+			clhr->setLegPosition(tripod_1[i], ang_l1, ground_velocity);
 		}else{
 			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_1[i], ANG_L2, (-1.0)*GROUND_VELOCITY);
+			clhr->setLegPosition(tripod_1[i], ang_l2, (-1.0)*ground_velocity);
 		}
 	}
 
 	for(int i=0; i < tripod_2.size(); i++){
 		if((tripod_2[i]%2) > 0){
 			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_2[i], ANG_L2, AIR_VELOCITY);
+			clhr->setLegPosition(tripod_2[i], ang_l2, air_velocity);
 		}else{
 			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_2[i], ANG_L1, (-1.0)*AIR_VELOCITY);
+			clhr->setLegPosition(tripod_2[i], ang_l1, (-1.0)*air_velocity);
 		}
 	}
 
@@ -326,12 +413,12 @@ void state_3 (clhero::Clhero_robot* clhr){
 		for(int i=0; i < tripod_1.size(); i++){
 			if((tripod_1[i]%2) > 0){
 				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_1[i]-1] - ANG_L1) < ANG_THR)){
+				if((fabs(state[tripod_1[i]-1] - ang_l1) < ANG_THR)){
 					legs_in_position++;
 				}
 			}else{
 				//If the leg is even (right side leg)
-				if((fabs(state[tripod_1[i]-1] - ANG_L2) < ANG_THR)){
+				if((fabs(state[tripod_1[i]-1] - ang_l2) < ANG_THR)){
 					legs_in_position++;
 				}
 			}
@@ -340,12 +427,12 @@ void state_3 (clhero::Clhero_robot* clhr){
 		for(int i=0; i < tripod_2.size(); i++){
 			if((tripod_2[i]%2) > 0){
 				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_2[i]-1] - ANG_L2) < ANG_THR)){
+				if((fabs(state[tripod_2[i]-1] - ang_l2) < ANG_THR)){
 					legs_in_position++;
 				}
 			}else{
 				//If the leg is even (right side leg)
-				if((fabs(state[tripod_2[i]-1] - ANG_L1) < ANG_THR)){
+				if((fabs(state[tripod_2[i]-1] - ang_l1) < ANG_THR)){
 					legs_in_position++;
 				}
 			}
@@ -381,23 +468,30 @@ void state_4 (clhero::Clhero_robot* clhr){
 	std::vector<float> state;
 	int legs_in_position = 0;
 
+	update_movement_parameters(clhr->getArgs());
+	const double stand_up_vel = movement_parameters["stand_up_velocity"];
+	const double ang_l2 = 2*PI - movement_parameters["ground_angle"]/2;
+	const double ang_l1 = movement_parameters["ground_angle"]/2;
+	const double ground_velocity = movement_parameters["ground_velocity"];
+	const double air_velocity = movement_parameters["air_velocity"];
+
 	for(int i=0; i < tripod_1.size(); i++){
 		if((tripod_1[i]%2) > 0){
 			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_1[i], ANG_L2, AIR_VELOCITY);
+			clhr->setLegPosition(tripod_1[i], ang_l2, air_velocity);
 		}else{
 			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_1[i], ANG_L1, (-1.0)*AIR_VELOCITY);
+			clhr->setLegPosition(tripod_1[i], ang_l1, (-1.0)*air_velocity);
 		}
 	}
 
 	for(int i=0; i < tripod_2.size(); i++){
 		if((tripod_2[i]%2) > 0){
 			//If the leg is odd (left side leg)
-			clhr->setLegPosition(tripod_2[i], ANG_L1, GROUND_VELOCITY);
+			clhr->setLegPosition(tripod_2[i], ang_l1, ground_velocity);
 		}else{
 			//If the leg is even (right side leg)
-			clhr->setLegPosition(tripod_2[i], ANG_L2, (-1.0)*GROUND_VELOCITY);
+			clhr->setLegPosition(tripod_2[i], ang_l2, (-1.0)*ground_velocity);
 		}
 	}
 
@@ -423,12 +517,12 @@ void state_4 (clhero::Clhero_robot* clhr){
 		for(int i=0; i < tripod_1.size(); i++){
 			if((tripod_1[i]%2) > 0){
 				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_1[i]-1] - ANG_L2) < ANG_THR)){
+				if((fabs(state[tripod_1[i]-1] - ang_l2) < ANG_THR)){
 					legs_in_position++;
 				}
 			}else{
 				//If the leg is even (right side leg)
-				if((fabs(state[tripod_1[i]-1] - ANG_L1) < ANG_THR)){
+				if((fabs(state[tripod_1[i]-1] - ang_l1) < ANG_THR)){
 					legs_in_position++;
 				}
 			}
@@ -437,12 +531,12 @@ void state_4 (clhero::Clhero_robot* clhr){
 		for(int i=0; i < tripod_2.size(); i++){
 			if((tripod_2[i]%2) > 0){
 				//If the leg is odd (left side leg)
-				if((fabs(state[tripod_2[i]-1] - ANG_L1) < ANG_THR)){
+				if((fabs(state[tripod_2[i]-1] - ang_l1) < ANG_THR)){
 					legs_in_position++;
 				}
 			}else{
 				//If the leg is even (right side leg)
-				if((fabs(state[tripod_2[i]-1] - ANG_L2) < ANG_THR)){
+				if((fabs(state[tripod_2[i]-1] - ang_l2) < ANG_THR)){
 					legs_in_position++;
 				}
 			}
