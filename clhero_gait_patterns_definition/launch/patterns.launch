@@ -6,6 +6,7 @@
 	<node name="alternating_tripod" pkg="clhero_gait_patterns_definition" type="alternating_tripod" output="screen"/>
 	<node name="alternating_tripod_turn_right" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_right" output="screen"/>
 	<node name="alternating_tripod_turn_left" pkg="clhero_gait_patterns_definition" type="alternating_tripod_turn_left" output="screen"/>
+	<node name="alternating_tripod_turn_open_loop" pkg="clhero_gait_patterns_definition" type="alternating_tripod_open_loop" output="screen"/>
 
 	<node name="stand_up" pkg="clhero_gait_patterns_definition" type="stand_up" output="screen"/>
 	<node name="lay_down" pkg="clhero_gait_patterns_definition" type="lay_down" output="screen"/>
