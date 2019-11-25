@@ -159,7 +159,7 @@ int main (int argc, char** argv){
 	std::cout << "	Terminal for clhero gait control " << std::endl;
 	std::cout << "------------------------------------------------------------" << std::endl;
 
-	while(active){
+	while(active && ros::ok()){
 
 		if(show_main_menu){
 			//Show the different actions
@@ -218,7 +218,7 @@ int main (int argc, char** argv){
 							std::cout << "Invalid command." << std::endl;
 							break;
 						default:
-							if((intro_pattern_active < 1) || (intro_pattern_active > pattern_names.size())){
+							if((pattern_choice < 1) || (pattern_choice > pattern_names.size())){
 								std::cout << "Number out of range." << std::endl;
 								break;
 							}else{
@@ -304,6 +304,61 @@ int main (int argc, char** argv){
 				std::cout << "-- " << "Update arguments" << " --" << std::endl;
 
 				msg.request.order = "update_args";
+
+				nh.getParam(REGISTERED_GP_PARAM_NAMESPACE, pattern_names);
+
+				if(pattern_names.size() < 1){
+					std::cout << "[Error] " << "There are no avaiable patterns" << std::endl;
+					break;
+				}
+
+				std::cout << "Available patterns: " << std::endl;
+
+				for(int i = 0; i < pattern_names.size(); i++){
+					std::cout << "  [" << i+1 << "] " << pattern_names[i] << std::endl;
+				}
+
+				intro_pattern_active = true;
+
+				while(intro_pattern_active){
+
+					std::cout << "Introduce the desired pattern to update arguments (press q to cancel): ";
+					pattern_choice = readCommandLine();
+
+					switch(pattern_choice){
+						case EXIT_COMMAND: 
+							intro_pattern_active = false;
+							break;
+						case HELP_COMMAND:
+							std::cout << "Invalid command." << std::endl;
+							break;
+						case INVALID_COMMAND_ERR:
+							std::cout << "Invalid command." << std::endl;
+							break;
+						default:
+							if((pattern_choice < 1) || (pattern_choice > pattern_names.size())){
+								std::cout << "Number out of range." << std::endl;
+								break;
+							}else{
+								msg.request.pattern_name = pattern_names[pattern_choice-1];
+								intro_pattern_active = false;
+								break;
+							}
+					}
+
+				}
+
+				if(pattern_choice == EXIT_COMMAND){
+					std::cout << "Update cancelled." << std::endl;
+					break;
+				}
+
+				std::cout << "Introduce the arguments as:" << std::endl;
+				std::cout << "  (e.g): key_1: value_1, key_2: value_2, key_3: value_3" << std::endl;
+				std::cout << "Arguments: " << std::endl;
+
+				std::getline(std::cin, msg.request.args);
+				sendRequest(msg);
 
 				break;
 

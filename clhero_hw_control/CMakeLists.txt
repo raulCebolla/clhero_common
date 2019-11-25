@@ -14,7 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
   clhero_gait_controller
   roscpp
   epos_library
-  chrono_register
 )
 
 ## System dependencies are found with CMake's conventions

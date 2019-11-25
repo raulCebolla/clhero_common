@@ -276,23 +276,15 @@ bool gaitPatternControlCallback (clhero_gait_controller::GaitPatternControl::Req
   //---------------------------------------------------
 
   if(!order.compare("update_args")){
-    
-    //Checks if the name matches the current gait pattern
-    if(!current_pattern.compare(req.pattern_name)){
 
-      //If matches, builds the msg
-      msg = buildPatternCommandMsg(req);
-      //and publishes it
-      pattern_command_pub.publish(msg);
+    //If matches, builds the msg
+    msg = buildPatternCommandMsg(req);
+    //and publishes it
+    pattern_command_pub.publish(msg);
 
-      res.ans = 0;
-      return true;
-
-    }else{
-      //If not matches an error shall be given
-      res.ans = 3;
-      return true;
-    }
+    res.ans = 0;
+    return true;
+      
   }
 
   //---------------------------------------------------

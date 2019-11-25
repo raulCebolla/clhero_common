@@ -26,7 +26,7 @@
 #include <epos_functions/epos_functions.h>
 
 #include <ros/callback_queue.h>
-#include <chrono_register/chrono_register.h>
+//#include <chrono_register/chrono_register.h>
 
 //----------------------------------------------------
 //    Defines
@@ -92,7 +92,7 @@ epos_functions* epos_f;
 CommandMsgManager* com_man;
 
 //Register manager 
-ChronoRegister *reg, *s_reg;
+//ChronoRegister *reg, *s_reg;
 
 //----------------------------------------------------
 //    Functions
@@ -534,12 +534,12 @@ int main(int argc, char **argv){
   ros::Rate loop_rate (LOOP_RATE);
 
   //Register initialization
-  reg = new ChronoRegister;
-  reg->set_path("/home/hexapodo/chrono_register_results");
-  s_reg = new ChronoRegister;
-  s_reg->set_path("/home/hexapodo/clhero_state_results");  
+  //reg = new ChronoRegister;
+  //reg->set_path("/home/hexapodo/chrono_register_results");
+  //s_reg = new ChronoRegister;
+  //s_reg->set_path("/home/hexapodo/clhero_state_results");  
 
-  Stopwatch loop_watch, state_watch, callback_watch;
+  //Stopwatch loop_watch, state_watch, callback_watch;
 
   //Creates the maxon motors'handler
   epos_f = new epos_functions();
@@ -572,21 +572,21 @@ int main(int argc, char **argv){
   //ros::waitForShutdown();
 
   while(ros::ok()){
-  	loop_watch.start();
+  	//loop_watch.start();
   	
- 	state_watch.start();
+ 	//state_watch.start();
   	StateUpdateMethod();
-  	state_watch.stop();
+  	//state_watch.stop();
 
-  	callback_watch.start();
+  	//callback_watch.start();
   	ros::spinOnce();
-  	callback_watch.stop();
+  	//callback_watch.stop();
 
-  	loop_watch.stop();
+  	//loop_watch.stop();
 
-  	reg->write("Loop:", loop_watch.get_interval());
-  	reg->write("callback:", callback_watch.get_interval());
-  	reg->write("state:", state_watch.get_interval());
+  	//reg->write("Loop:", loop_watch.get_interval());
+  	//reg->write("callback:", callback_watch.get_interval());
+  	//reg->write("state:", state_watch.get_interval());
   	//loop_rate.sleep();
   }
 

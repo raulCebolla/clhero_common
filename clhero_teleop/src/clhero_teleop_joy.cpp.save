@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
 				else if(move_command_old == 1)
 				{
-					msg.request.pattern_name = "open_loop_alternating_tripod";
+					msg.request.pattern_name = "alternating_tripod";
 					msg.request.order = "pause";
 				}
 				else if(move_command_old == 10)
@@ -199,7 +199,8 @@ int main(int argc, char **argv)
 
 				else if(move_command_old == 1)
 				{
-					//msg.request.pattern_name("alternating_tripod");
+					//msg.request.pattern_name("
+alternating_tripod");
 					//msg.request.order("stop");
 					// Faltaría enviar mensaje aquí
 					msg.request.pattern_name = "turn_right_tripod";

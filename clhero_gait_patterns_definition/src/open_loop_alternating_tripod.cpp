@@ -36,7 +36,8 @@
 #define REV_ANG_THR 2.792526803190927// 160 [º]
 #define MAX_GROUND_ANGLE 3.6208146876268845 // 2*max_take_off_angle
 #define MAX_VEL 6.0
-#define TIME_CORRECTION_FACTOR 1.2
+#define TIME_CORRECTION_FACTOR 1
+#define wait_time_DEFAULT 0.4
 
 //----------------------------------------------------
 //    Global Variables
@@ -60,6 +61,7 @@ std::unordered_map<std::string,double> set_default_movement_parameters(){
 	movement_parameters["ground_velocity"] = GROUND_VELOCITY;
 	movement_parameters["air_velocity"] = movement_parameters["air_angle"]/movement_parameters["ground_angle"] * movement_parameters["ground_velocity"];
 	movement_parameters["stand_up_velocity"] = STAND_UP_VEL;
+	movement_parameters["wait_time"] = wait_time_DEFAULT;
 	return movement_parameters;
 }
 
@@ -108,6 +110,11 @@ std::unordered_map<std::string, double> update_movement_parameters(std::map<std:
 	//Stand up velocity
 	try{
 		movement_parameters["stand_up_velocity"] = std::stod(args.at("stand_up_velocity"));
+	}catch(std::out_of_range& oor){	}
+
+	//threshold time
+	try{
+		movement_parameters["wait_time"] = std::stod(args.at("wait_time"));
 	}catch(std::out_of_range& oor){	}
 
 	return movement_parameters;
@@ -384,7 +391,7 @@ void state_3 (clhero::Clhero_robot* clhr){
 	const double ground_velocity = movement_parameters["ground_velocity"];
 	const double air_velocity = movement_parameters["air_velocity"];
 
-	const double transition_time = TIME_CORRECTION_FACTOR * movement_parameters["ground_angle"] / movement_parameters["ground_velocity"];
+	const double transition_time = TIME_CORRECTION_FACTOR * movement_parameters["ground_angle"] / movement_parameters["ground_velocity"] + movement_parameters["wait_time"];
 
 	clhr->setLegPosition(tripod_1, landing_pos, air_velocity);
 	clhr->setLegPosition(tripod_2, take_off_pos, ground_velocity);
@@ -447,7 +454,7 @@ void state_4 (clhero::Clhero_robot* clhr){
 	const double ground_velocity = movement_parameters["ground_velocity"];
 	const double air_velocity = movement_parameters["air_velocity"];
 
-	const double transition_time = TIME_CORRECTION_FACTOR * movement_parameters["ground_angle"] / movement_parameters["ground_velocity"];
+	const double transition_time = TIME_CORRECTION_FACTOR * movement_parameters["ground_angle"] / movement_parameters["ground_velocity"] + movement_parameters["wait_time"];
 
 	clhr->setLegPosition(tripod_1, take_off_pos, ground_velocity);
 	clhr->setLegPosition(tripod_2, landing_pos, air_velocity);
