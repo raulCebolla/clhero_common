@@ -32,7 +32,7 @@
     <visual>
         <origin xyz="0 0 0.38" rpy="0 0 ${pi/2}"/>
         <geometry>
-            <mesh filename="package://hexapodo_description/meshes/cinta_barreras.stl" scale="0.01 0.01 0.01"/>
+            <mesh filename="package://clhero_description/meshes/cinta_barreras.stl" scale="0.01 0.01 0.01"/>
         </geometry>
         <material name="base_link_material">
             <color rgba="${51/255} ${102/255} ${0/255} 1"/>
@@ -47,7 +47,7 @@
     <!--collision>
         <origin xyz="0 0 0.358" rpy="0 0 0"/>
         <geometry>
-            <mesh filename="package://hexapodo_description/meshes/cinta_barreras.stl" scale="0.01 0.01 0.01"/>
+            <mesh filename="package://clhero_description/meshes/cinta_barreras.stl" scale="0.01 0.01 0.01"/>
         </geometry>
     </collision-->
 
@@ -72,7 +72,7 @@
     <visual>
         <origin xyz="${-300/1e3} 0 0.0" rpy="${pi/2} 0 ${pi/2}"/>
         <geometry>
-            <mesh filename="package://hexapodo_description/meshes/chassis.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://clhero_description/meshes/chassis.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="chassis_material">
             <color rgba="${51/255} ${102/255} ${0/255} 1"/>
@@ -81,7 +81,7 @@
     <collision>
         <origin xyz="${-300/1e3} 0 0.0" rpy="${pi/2} 0 ${pi/2}"/>
         <geometry>
-            <mesh filename="package://hexapodo_description/meshes/chassis.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://clhero_description/meshes/chassis.stl" scale="0.001 0.001 0.001"/>
         </geometry>
     </collision>
 

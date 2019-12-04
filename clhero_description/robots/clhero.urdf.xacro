@@ -26,47 +26,47 @@
 <!-- Instanciacion de las patas dentro de la descripcion del robot -->
 
 <pata_c name="motor_1" parent_link="base_link" right="0">
-    <origin xyz="${-235/1000} ${233/1000} ${0/1000}" rpy="0 0 0"/>
+    <origin xyz="${-235/1000} ${298/1000} ${0/1000}" rpy="0 0 ${pi}"/>
 </pata_c>
 
 <pata_c name="motor_2" parent_link="base_link" right="1">
-    <origin xyz="${-235/1000} ${-233/1000} ${0/1000}" rpy="0 0 0"/>
+    <origin xyz="${-235/1000} ${-253/1000} ${0/1000}" rpy="0 0 ${pi}"/>
 </pata_c>
 
 <pata_c name="motor_3" parent_link="base_link" right="0">
-    <origin xyz="${0/1000} ${289/1000} ${0/1000}" rpy="0 0 0"/>
+    <origin xyz="${0/1000} ${354/1000} ${0/1000}" rpy="0 0 ${pi}"/>
 </pata_c>
 
 <pata_c name="motor_4" parent_link="base_link" right="1">
-    <origin xyz="${0/1000} ${-289/1000} ${0/1000}" rpy="0 0 0"/>
+    <origin xyz="${0/1000} ${-303/1000} ${0/1000}" rpy="0 0 ${pi}"/>
 </pata_c>
 
 <pata_c name="motor_5" parent_link="base_link" right="0">
-    <origin xyz="${235/1000} ${233/1000} ${0/1000}" rpy="0 0 0"/>
+    <origin xyz="${235/1000} ${298/1000} ${0/1000}" rpy="0 0 ${pi}"/>
 </pata_c>
 
 <pata_c name="motor_6" parent_link="base_link" right="1">
-    <origin xyz="${235/1000} ${-233/1000} ${0/1000}" rpy="0 0 0"/>
+    <origin xyz="${235/1000} ${-253/1000} ${0/1000}" rpy="0 0 ${pi}"/>
 </pata_c>
 
 <!-- Instanciacion de la camara kinect dentro de la descripcion del robot -->
 
 <!--kinect_camera name="kin" parent_link="base_link">
-    <origin xyz="${300/1000} ${0/1000} ${0/1000}" rpy="0 0 0"/>
+    <origin xyz="${300/1000} ${0/1000} ${0/1000}" rpy="0 0 ${pi/2}"/>
 </kinect_camera-->
 
 <!-- Instanciacion de la IMU dentro de la descripcion del robot -->
 
 <!--imu name="imu1" parent_link="base_link">
-    <origin xyz="${0/1000} ${0/1000} ${40/1000}" rpy="0 0 0"/>
+    <origin xyz="${0/1000} ${0/1000} ${40/1000}" rpy="0 0 ${pi/2}"/>
 </imu-->
 
 <!--hokuyo_sensor sensor_name="hokuyo" parent_name="base_link">
-    <origin xyz="${300/1000} 0 0" rpy="0 0 0"/>
+    <origin xyz="${300/1000} 0 0" rpy="0 0 ${pi/2}"/>
 </hokuyo_sensor-->
 
 <sensor_d435 parent="base_link">
-    <origin xyz="0.27 0 -0.01" rpy="0 0 0"/>
+    <origin xyz="-0.27 0 -0.01" rpy="0 0 ${pi}"/>
 </sensor_d435>
 
 </robot>

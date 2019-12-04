@@ -89,7 +89,7 @@
 </hokuyo_sensor-->
 
 <sensor_d435 parent="base_link">
-    <origin xyz="0.27 0 -0.01" rpy="0 0 0"/>
+    <origin xyz="0.27 0 -0.01" rpy="0 0 $(pi)"/>
 </sensor_d435>
 
 </robot>
