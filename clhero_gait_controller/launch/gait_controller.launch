@@ -5,9 +5,15 @@
 	<arg name="gazebo_sim" default="false"/>
 	<arg name="hardware" default="true"/>
 	<arg name="joy" default="true"/>	
+	<arg name="description" default="true"/>
+	<arg name="rviz" default="false"/>
 
 	<!-- Parametros del YAML -->
 	<!--rosparam file="$(find clhero_hw_control)/config/clhero_params.yaml" /-->
+
+	<!--Description-->
+	<include file="$(find clhero_description)/launch/clhero_description.launch" if="$(arg description)"/>
+	<node pkg="rviz" name="rviz" type="rviz" if="$(arg rviz)"/>
 
 	<group ns="clhero_gait_control">
 		
