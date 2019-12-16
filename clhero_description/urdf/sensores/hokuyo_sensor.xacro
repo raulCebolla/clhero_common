@@ -2,7 +2,7 @@
 <robot name="hokuyo_sensor" xmlns:xacro="http://ros.org/wiki/xacro">
 
     <xacro:macro name="hokuyo_sensor" params="sensor_name parent_name *origin">
-        <link name="${sensor_name}_hokuyo_base">
+        <link name="laser">
             <inertial>
                 <mass value="0.1"/>
                 <inertia    ixx="0.01"      ixy="0"     ixz="0"
@@ -23,11 +23,11 @@
         <joint name="joint_${sensor_name}_to_parent" type="fixed">
             <xacro:insert_block name="origin"/>
             <parent link="${parent_name}"/>
-            <child link="${sensor_name}_hokuyo_base"/>
+            <child link="laser"/>
         </joint>
 
         <!-- hokuyo -->
-        <gazebo reference="${sensor_name}_hokuyo_base">
+        <gazebo reference="laser">
           <material>Gazebo/blue</material>
           <sensor type="ray" name="head_hokuyo_sensor">
             <pose>0 0 0 0 0 0</pose>
@@ -59,7 +59,7 @@
             </ray>
             <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
               <topicName>/robotest/laser/scan</topicName>
-              <frameName>${sensor_name}_hokuyo_base</frameName>
+              <frameName>laser</frameName>
             </plugin>
           </sensor>
         </gazebo>

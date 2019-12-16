@@ -10,8 +10,8 @@
 <xacro:include filename="$(find clhero_description)/urdf/pata_c.xacro"/>
 <xacro:include filename="$(find clhero_description)/urdf/base.xacro"/>
 <!--xacro:include filename="$(find clhero_description)/urdf/sensores/kinect_camera.xacro"/>
-<xacro:include filename="$(find clhero_description)/urdf/sensores/imu.xacro"/>
-<xacro:include filename="$(find clhero_description)/urdf/sensores/hokuyo_sensor.xacro"/-->
+<xacro:include filename="$(find clhero_description)/urdf/sensores/imu.xacro"/-->
+<xacro:include filename="$(find clhero_description)/urdf/sensores/hokuyo_sensor.xacro"/>
 
 <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro"/>
 
@@ -57,13 +57,13 @@
 
 <!-- Instanciacion de la IMU dentro de la descripcion del robot -->
 
-<!--imu name="imu1" parent_link="base_link">
-    <origin xyz="${0/1000} ${0/1000} ${40/1000}" rpy="0 0 ${pi/2}"/>
-</imu-->
+<imu name="base_imu_link" parent_link="base_link">
+    <origin xyz="${0/1000} ${0/1000} ${40/1000}" rpy="0 0 0"/>
+</imu>
 
-<!--hokuyo_sensor sensor_name="hokuyo" parent_name="base_link">
-    <origin xyz="${300/1000} 0 0" rpy="0 0 ${pi/2}"/>
-</hokuyo_sensor-->
+<hokuyo_sensor sensor_name="hokuyo" parent_name="base_link">
+    <origin xyz="-0.26 0 ${40/1000}" rpy="0 0 ${pi}"/>
+</hokuyo_sensor>
 
 <sensor_d435 parent="base_link">
     <origin xyz="-0.27 0 -0.01" rpy="0 0 ${pi}"/>

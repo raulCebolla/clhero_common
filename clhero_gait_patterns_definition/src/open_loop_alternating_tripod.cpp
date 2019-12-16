@@ -37,7 +37,7 @@
 #define MAX_GROUND_ANGLE 3.6208146876268845 // 2*max_take_off_angle
 #define MAX_VEL 6.0
 #define TIME_CORRECTION_FACTOR 1
-#define wait_time_DEFAULT 0.4
+#define wait_time_DEFAULT 0.05
 
 //----------------------------------------------------
 //    Global Variables
